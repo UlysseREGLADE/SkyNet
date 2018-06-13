@@ -1,13 +1,12 @@
 import tensorflow as tf
 
-import SkyNet.HandyTensorFunctions as htf
-
 class Net(object):
 
     #Constructeur
     def __init__(self, name):
         self.var_list = []
         self.var_index = 0
+        self.n_parameters = 0
         self.name = name
 
     def output(self, i_input):
@@ -50,6 +49,12 @@ class Net(object):
         else:
             l_var = self.var_list[self.var_index]
         self.var_index += 1
+        #calcule du nombre de variables
+        shape = self.var_list[-1].shape
+        n_param = 1
+        for axis in shape:
+            n_param *= axis
+        self.n_parameters += n_param
         return l_var
 
     def trainer(self, loss, step=None):
