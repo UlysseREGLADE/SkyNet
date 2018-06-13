@@ -21,7 +21,7 @@ def l1loss(y, y_ref, name="l1loss"):
 
 def ce2D(y, y_ref, name="l1loss"):
     with tf.name_scope(name):
-        y = tf.clip_by_value(y, 1e-10, 1)
+        y = tf.clip_by_value(y, 1e-10, 1-1e-10)
         return tf.reduce_mean(-y_ref*tf.log(y) - (1-y_ref)*tf.log(1-y))
 
 #Pooling functions
