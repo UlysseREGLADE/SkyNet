@@ -53,7 +53,7 @@ class Net(object):
         shape = self.var_list[-1].shape
         n_param = 1
         for axis in shape:
-            n_param *= axis
+            n_param *= int(axis)
         self.n_parameters += n_param
         return l_var
 
