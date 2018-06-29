@@ -13,13 +13,19 @@ def outrelu(x, name="outrelu"):
 
 
 #Loss functions
+        
+def celoss(y, y_ref, name="celoss"):
+    with tf.name_scope(name):
+        y = tf.clip_by_value(y, 1e-10, 1-(1e-10))
+        return tf.reduce_mean(-y_ref*tf.log(y))
+
 def l1loss(y, y_ref, name="l1loss"):
     with tf.name_scope(name):
         l_y = tf.reshape(y, [-1])
         l_y_ref = tf.reshape(y_ref, [-1])
         return tf.reduce_mean(tf.abs(tf.subtract(l_y, l_y_ref)))
 
-def ce2D(y, y_ref, name="l1loss"):
+def ce2D(y, y_ref, name="ce2D"):
     with tf.name_scope(name):
         y = tf.clip_by_value(y, 1e-10, 1-1e-10)
         return tf.reduce_mean(-y_ref*tf.log(y) - (1-y_ref)*tf.log(1-y))
