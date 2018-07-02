@@ -3,34 +3,50 @@ import tensorflow as tf
 class Net(object):
 
     #Constructeur
-    def __init__(self, name, is_training):
-        self.var_list = []
-        self.var_index = 0
-        self.n_parameters = 0
+    def __init__(self, name, is_training=True):
         self.name = name
         self.is_training = is_training
+        self.is_batch_norm = False
+        self.n_parameters = 0
 
     def output(self, i_input):
-        with tf.name_scope(self.name):
+        self.scopes_and_variables = []
+        self.n_parameters = 0
+        with tf.varible_scope(self.name, reuse = tf.AUTO_REUSE):
             l_output = self.net(i_input)
-        self.var_index = 0
         return l_output
 
-    def normalize(self, x):
-        with tf.name_scope("normalize"):
+    def get_name(name):
+        index=''
+        full_name = tf.get_default_graph().get_name_scope()+"/"+name
+        while(full_name+index in self.scopes_and_variables):
+            if(index==''):
+                index = '_1'
+            else:
+                index = str(int(index.split('_')[1])+1)
+        name += index
+        self.scopes_and_variables.append(name)
+        return name
+
+    def batch_norm(self, x, name="batch_norm"):
+        name = self.get_name(name)
+        self.is_batch_norm = True
+        with tf.variable_scope(name):
             is_training = self.is_training
-            normalized=tf.contrib.layers.batch_norm(x,
-                                                    center=True,
-                                                    scale=True,
-                                                    is_training=is_training)
+            normalized = tf.contrib.layers.batch_norm(x,
+                                                      center=True,
+                                                      scale=True,
+                                                      is_training=is_training)
             return normalized
 
     def conv(self, x, out_channels, kernel=3, name="conv"):
-        with tf.name_scope(name):
+        name = self.get_name(name)
+        with tf.variable_scope(name):
             #On calcule la variance relative a l'initialisation des poids
             shape = x.get_shape().as_list()
             in_channels = shape[3]
-            l_stddev = (2/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
+            stddev = (2/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
+            init = tf.truncated_normal(shape, stddev=stddev)
             #Puis on initialise les variables
             l_w = self.var([kernel, kernel, in_channels, out_channels],
                            l_stddev,
@@ -40,8 +56,9 @@ class Net(object):
             l_conv = tf.nn.conv2d(x, l_w, strides=[1, 1, 1, 1], padding="SAME")
             return (l_conv + l_b)
 
-    def fcon(self, x, out_size, name="fcon", stddev=None):
-        with tf.name_scope(name):
+    def fcon(self, x, out_size, stddev=None, name="fcon"):
+        name = self.get_name(name)
+        with tf.variable_scope(name):
             #On commence par gerer la taille du tenseur d'entree
             shape = x.get_shape().as_list()
             in_size = shape[1]
@@ -59,25 +76,28 @@ class Net(object):
             return tf.matmul(x, l_w) + l_b
 
     def var(self, shape, stddev=0, name="var"):
-        l_var = None
-        if(self.var_index == len(self.var_list)):
-            l_var = tf.Variable(tf.truncated_normal(shape,stddev=stddev),
-                                name=name)
-            self.var_list.append(l_var)
-            tf.summary.histogram(name, l_var)
-        else:
-            l_var = self.var_list[self.var_index]
-        self.var_index += 1
+        #On manage le nom de la variable pour ne pas avoir de pb
+        name = self.get_name(name)
+        #Puis on la creer
+        var = tf.get_variable(name=name,
+                              initializer=tf.truncated_normal(shape,
+                                                              stddev=stddev))
         #calcule du nombre de variables
-        shape = self.var_list[-1].shape
+        shape = var.shape
         n_param = 1
         for axis in shape:
             n_param *= int(axis)
         self.n_parameters += n_param
         return l_var
 
-    def trainer(self, loss, step=1e-3):
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    def trainer(self, loss, trainer=tf.train.AdamOptimizer()):
+        #On recupere toutes les variables du graph a entrainer
+        trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                       scope=self.name)
+        #Si il n'y a pas de batch normalisation, c'est tout bon
+        if(not self.is_batch_norm):
+            return trainer.minimize(loss, var_list=trainables)
+        #Si non, il faut tenir compte des update_ops
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.name)
         with tf.control_dependencies(update_ops):
-            return tf.train.AdamOptimizer(0.0002, 0.5).minimize(loss,
-                                                         var_list=self.var_list)
+            return trainer.minimize(loss, var_list=trainables)
