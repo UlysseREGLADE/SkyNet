@@ -25,11 +25,11 @@ class Net(object):
             l_output = self.net(i_input)
         return l_output
 
-    def net():
+    def net(self):
         #C'est dans cette fonction que doit etre defini le graph de calcule
         raise NotImplementedError
 
-    def def_net():
+    def set_net(self):
         #C'est dans cette fonction que doit etre defini le graph de calcule
         warnings.warn('def_net not implemented, but called')
 
