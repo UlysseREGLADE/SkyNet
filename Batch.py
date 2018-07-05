@@ -19,8 +19,8 @@ class Batch(object):
     def reset(self):
         self.count = 0
 
-    def epoch_count():
-        return count/self.train_size
+    def epoch_count(self):
+        return self.count/self.train_size
 
     def train(self, size=None):
         size  = min(self.train_size, size)
@@ -43,7 +43,7 @@ class Batch(object):
 
 class MnistBatch(Batch):
 
-    def load():
+    def load(self):
 
         from tensorflow.examples.tutorials.mnist import input_data
 
@@ -51,19 +51,19 @@ class MnistBatch(Batch):
         self.train_size = 60000
         self.test_size = 10000
 
-    def train_op(size=100):
+    def train_op(self, size=100):
 
-        x_train, y_train = mnist.train.next_batch(size)
+        x_train, y_train = self.mnist.train.next_batch(size)
         x_train = x_train.reshape((size, 28, 28, 1))
 
         return x_train, y_train
 
-    def test_op(size=1000):
+    def test_op(self, size=1000):
 
         index = np.arange(self.test_size)
         np.random.shuffle(index)
         index = index[:size]
-        
+
         x_train,y_train=mnist.test.images[index,:],mnist.test.labels[index,:]
         x_train = x_train.reshape((size, 28, 28, 1))
 

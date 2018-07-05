@@ -21,7 +21,7 @@ class Net(object):
     def output(self, i_input):
         self.scopes_and_variables = []
         self.n_parameters = 0
-        with tf.varible_scope(self.name, reuse = tf.AUTO_REUSE):
+        with tf.variable_scope(self.name, reuse = tf.AUTO_REUSE):
             l_output = self.net(i_input)
         return l_output
 
@@ -33,7 +33,7 @@ class Net(object):
         #C'est dans cette fonction que doit etre defini le graph de calcule
         warnings.warn('def_net not implemented, but called')
 
-    def get_name(name):
+    def get_name(self, name):
         index=''
         full_name = tf.get_default_graph().get_name_scope()+"/"+name
         while(full_name+index in self.scopes_and_variables):
@@ -93,9 +93,9 @@ class Net(object):
             if(init is None):
                 init = self.default_init
             if(init=="normal"):
-                stddev = (2/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
+                stddev = (2/(in_size+out_size))**0.5
             elif(init=="uniform"):
-                stddev = (6/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
+                stddev = (6/(in_size+out_size))**0.5
             stddev *= self.std_coef
             #Puis on initialise les variables
             w = self.var([in_size, out_size], stddev, name="weigth")
@@ -112,9 +112,9 @@ class Net(object):
         elif(init=="uniform"):
             init=tf.random_uniform(shape, stddev=stddev)
         elif(init=="const"):
-            init = stddev*np.ones((shape))
+            init = stddev*np.ones((shape), dtype=np.float32)
         #Puis on la creer
-        var = tf.get_variable(name=name, initializer=init)
+        var = tf.get_variable(name=name, initializer=init, dtype=tf.float32)
         #actualisation du nombre de variables dans le graph
         n_param = 1
         for axis in shape:

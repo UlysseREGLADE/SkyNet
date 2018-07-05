@@ -100,12 +100,3 @@ def pool(x, size, i_mask=False, strides=2, name="pool"):
             return l_y, l_mask[:, l_pad1:size-l_pad2, l_pad1:size-l_pad2, :]
         else:
             return l_y
-
-#Initializer functions
-
-def init(shape, type="zeros"):
-    if(type=="zeros"):
-        return np.zeros(shape)
-    elif(type=="normal"):
-        return
-    elif(type=="uniform"):

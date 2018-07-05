@@ -4,6 +4,7 @@ import Net as cn
 import time
 import datetime
 import Batch
+import HandyTensorFunctions as htf
 
 class Model(object):
 
@@ -22,33 +23,36 @@ class Model(object):
             self.is_training = tf.placeholder(tf.bool, name='is_training')
             self.reset_op(**kwargs)
 
+        print("op")
+        for op in self.g.get_operations():
+            print(op.name)
+        print()
+        print("node")
+        for node in self.g.as_graph_def().node:
+            print(node.name)
+
 
     def train(self, batch, epochs):
 
-        if(self.sess is not None):
-            self.sess.close()
+        with tf.Session(graph=self.g) as self.sess:
 
-        self.sess = tf.Session()
-        self.sess.run(tf.global_variables_initializer())
+            self.sess.run(tf.global_variables_initializer())
+            batch.reset()
+            count = 0
 
-        batch.reset()
-        count = 0
+            while(batch.epoch_count()<batch.train_size*epochs):
 
-        while(batch.epoch_count()<batch.train_size*epochs):
+                alepsed_time = time.time()
+                delta_epoch = batch.epoch_count()
+                debug = self.train_op(batch, count)
 
-            alepsed_time = time.time()
-            delta_epoch = batch.epoch_count
-            debug = self.train_op(batch, count)
+                count += 1
+                delta_epoch = batch.epoch_count() - delta_epoch
+                alepsed_time = time.time() - alepsed_time
+                remaining_time = alepsed_time*batch.train_size*epochs/delta_epoch
+                remaining_time = datetime.timedelta(seconds=remaining_time)
 
-            count += 1
-            delta_epoch = batch.epoch_count - delta_epoch
-            alepsed_time = time.time() - elapsed_time
-            remaining_time = alepsed_time*batch.train_size*epochs/delta_epoch
-            remaining_time = datetime.timedelta(seconds=remaining_time)
-
-            print(remaining_time)
-
-        self.sess.close()
+                print(remaining_time)
 
     def train_op(self, count):
         raise NotImplementedError
@@ -119,8 +123,10 @@ class MnistModel(Model):
         self.clas_loss = htf.celoss(self.clas_output, self.clas_ref_output)
         self.clas_trainer = clas.trainer(self.clas_loss)
 
-    def train_op(batch, count):
+    def train_op(self, batch, count):
+
         batch_x, batch_y = batch.train(100)
+
         self.sess.run(self.clas_trainer, feed_dict={self.clas_input:batch_x,
                                                     self.clas_ref_output:batch_y})
         return self.clas_loss.eval(session=self.sess, feed_dict={self.clas_input:batch_x,
