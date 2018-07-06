@@ -58,21 +58,28 @@ class Model(object):
 
                 delta_epoch = batch.epoch_count() - delta_epoch
                 alepsed_time = time.time() - alepsed_time
-                remaining_time = alepsed_time*batch.train_size*epochs/delta_epoch
+                remaining_time = alepsed_time*(epochs-batch.epoch_count())/delta_epoch
                 remaining_time = datetime.timedelta(seconds=remaining_time)
-                # progrssion = batch.epoch_count()/batch.train_size*epochs
-                #
-                # print(progrssion)
-                # line = "["
-                # for i in range(10):
-                #     if(i<int(10*progrssion)):
-                #         line += "█"
-                #     else:
-                #         line += " "
-                # line += "] %.1f"%(progrssion)
-                # print(line, end='\r')
+                progrssion = batch.epoch_count()/epochs
 
-                print(str(remaining_time) + " " + str(debug) + " " + str(count), end='\r')
+                line = "["
+                bar_size = 20
+                for i in range(bar_size):
+                    if(i<int(bar_size*progrssion)):
+                        line += "#"
+                    else:
+                        line += " "
+                line += "] %2.1f"%(100*progrssion) + "% "
+
+                hours, rem = divmod(remaining_time.seconds, 3600)
+                minutes, seconds = divmod(rem, 60)
+                line += "%2d day(s), %2dh%2dm%2ds"%(remaining_time.days,
+                                                    hours,
+                                                    minutes,
+                                                    seconds)
+                print(line, end='\r')
+
+                #print(str(remaining_time) + " " + str(debug) + " " + str(count), end='\r')
 
     def train_op(self, count):
         raise NotImplementedError
@@ -157,4 +164,4 @@ class MnistModel(Model):
 
 
 model = MnistModel()
-model.train(batch=Batch.MnistBatch(), epochs=0.0001)
+model.train(batch=Batch.MnistBatch(), epochs=10)

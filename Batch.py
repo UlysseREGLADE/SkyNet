@@ -22,11 +22,9 @@ class Batch(object):
     def epoch_count(self):
         return self.count/self.train_size
 
-    def train(self, size=None):
+    def train(self, size):
         size  = min(self.train_size, size)
         self.count += size
-        if(not size is None):
-            return self.train_op(size)
         return self.train_op(size)
 
     def train_op(self, size=0):
@@ -51,7 +49,7 @@ class MnistBatch(Batch):
         self.train_size = 60000
         self.test_size = 10000
 
-    def train_op(self, size=100):
+    def train_op(self, size):
 
         x_train, y_train = self.mnist.train.next_batch(size)
         x_train = x_train.reshape((size, 28, 28, 1))
