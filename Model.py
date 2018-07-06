@@ -6,6 +6,13 @@ import datetime
 import Batch
 import HandyTensorFunctions as htf
 
+"""
+For my ally is the Force, and a powerful ally it is. Life creates it, makes it
+grow. Its energy surrounds us and binds us. Luminous beings are we, not this
+crude matter. You must feel the Force around you; here, between you, me, the
+tree, the rock, everywhere, yes. Even between the land and the ship.
+"""
+
 class Model(object):
 
     def __init__(self, **kwargs):
@@ -18,41 +25,54 @@ class Model(object):
 
     def reset(self, **kwargs):
 
-        self.g = tf.Graph()
-        with self.g.as_default():
+        self.graph = tf.Graph()
+        with self.graph.as_default():
             self.is_training = tf.placeholder(tf.bool, name='is_training')
             self.reset_op(**kwargs)
 
-        print("op")
-        for op in self.g.get_operations():
-            print(op.name)
-        print()
-        print("node")
-        for node in self.g.as_graph_def().node:
-            print(node.name)
+        # print("op")
+        # for op in self.graph.get_operations():
+        #     print(op.name)
+        # print()
+        # print("node")
+        # for node in self.graph.as_graph_def().node:
+        #     print(node.name)
 
 
-    def train(self, batch, epochs):
+    def train(self, batch, epochs, batch_size=100, display=100):
 
-        with tf.Session(graph=self.g) as self.sess:
+        with tf.Session(graph=self.graph) as self.sess:
 
             self.sess.run(tf.global_variables_initializer())
             batch.reset()
+
             count = 0
 
-            while(batch.epoch_count()<batch.train_size*epochs):
+            while(batch.epoch_count()<epochs):
 
                 alepsed_time = time.time()
                 delta_epoch = batch.epoch_count()
-                debug = self.train_op(batch, count)
+                for i in range(display):
+                    debug = self.train_op(batch, count)
+                    count += 1
 
-                count += 1
                 delta_epoch = batch.epoch_count() - delta_epoch
                 alepsed_time = time.time() - alepsed_time
                 remaining_time = alepsed_time*batch.train_size*epochs/delta_epoch
                 remaining_time = datetime.timedelta(seconds=remaining_time)
+                # progrssion = batch.epoch_count()/batch.train_size*epochs
+                #
+                # print(progrssion)
+                # line = "["
+                # for i in range(10):
+                #     if(i<int(10*progrssion)):
+                #         line += "█"
+                #     else:
+                #         line += " "
+                # line += "] %.1f"%(progrssion)
+                # print(line, end='\r')
 
-                print(remaining_time)
+                print(str(remaining_time) + " " + str(debug) + " " + str(count), end='\r')
 
     def train_op(self, count):
         raise NotImplementedError
@@ -108,7 +128,7 @@ class MnistModel(Model):
     def reset_op(self, **kwargs):
 
         clas = Classifier('clas', self.is_training)
-        clas.set_net(**kwargs)
+        clas.set_net({"layer":"relu"})
 
         self.clas_input = tf.placeholder(tf.float32,
                                          shape=[None, 28, 28, 1],
@@ -121,18 +141,20 @@ class MnistModel(Model):
                                               name="pi_ref_output")
 
         self.clas_loss = htf.celoss(self.clas_output, self.clas_ref_output)
-        self.clas_trainer = clas.trainer(self.clas_loss)
+        self.clas_trainer = clas.trainer(self.clas_loss, tf.train.AdamOptimizer(0.0002, 0.5))
 
     def train_op(self, batch, count):
 
-        batch_x, batch_y = batch.train(100)
+        batch_x, batch_y_ref = batch.train(100)
+        self.sess.run(self.clas_trainer,feed_dict={self.clas_input:batch_x,
+                                                   self.clas_ref_output:batch_y_ref})
 
-        self.sess.run(self.clas_trainer, feed_dict={self.clas_input:batch_x,
-                                                    self.clas_ref_output:batch_y})
-        return self.clas_loss.eval(session=self.sess, feed_dict={self.clas_input:batch_x,
-                                                                 self.clas_ref_output:batch_y})
+        test_x, test_y_ref = batch.test(1000)
+        test_y = self.clas_output.eval(session=self.sess,feed_dict={self.clas_input:test_x})
+
+        return htf.compute_acc(test_y, test_y_ref)
 
 
 
 model = MnistModel()
-model.train(batch=Batch.MnistBatch(), epochs=10)
+model.train(batch=Batch.MnistBatch(), epochs=0.0001)

@@ -16,7 +16,7 @@ class Net(object):
         #Coefficient pour l'initialisation de xavier
         self.std_coef = 1
         #Initialisation par defaut
-        self.default_init = "uniform"
+        self.default_init = "normal"
 
     def output(self, i_input):
         self.scopes_and_variables = []
@@ -65,15 +65,15 @@ class Net(object):
             if(init is None):
                 init = self.default_init
             if(init=="normal"):
-                stddev = (2/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
+                param = (2/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
             elif(init=="uniform"):
                 stddev = (6/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
             stddev *= self.std_coef
             #Puis on initialise les variables
             w = self.var([kernel, kernel, in_channels, out_channels],
-                           stddev,
-                           init,
-                           name="weigth")
+                         param=stddev,
+                         init=init,
+                         name="weigth")
             b = self.var([out_channels], 0, name="bias")
             #Enfin, on retourne ce qu'il faut
             conv = tf.nn.conv2d(x, w, strides=[1, 1, 1, 1], padding="SAME")
@@ -94,25 +94,27 @@ class Net(object):
                 init = self.default_init
             if(init=="normal"):
                 stddev = (2/(in_size+out_size))**0.5
+                print("bonjour")
             elif(init=="uniform"):
                 stddev = (6/(in_size+out_size))**0.5
             stddev *= self.std_coef
+            print(stddev)
             #Puis on initialise les variables
-            w = self.var([in_size, out_size], stddev, name="weigth")
-            b = self.var([out_size], 0, name="bias")
+            w = self.var([in_size, out_size], param=stddev, init=init, name="weigth")
+            b = self.var([out_size], param=0, init=init, name="bias")
             #Enfin, on retourne ce qu'il faut
             return tf.matmul(x, w) + b
 
-    def var(self, shape, stddev=0, init="const", name="var"):
+    def var(self, shape, param=0, init="const", name="var"):
         #On manage le nom de la variable pour ne pas avoir de pb
         name = self.get_name(name)
         #On calcule l'initialiseur
         if(init=="normal"):
-            init=tf.truncated_normal(shape, stddev=stddev)
+            init=tf.truncated_normal(shape, stddev=param)
         elif(init=="uniform"):
-            init=tf.random_uniform(shape, stddev=stddev)
+            init=tf.random_uniform(shape, stddev=param)
         elif(init=="const"):
-            init = stddev*np.ones((shape), dtype=np.float32)
+            init = param*np.ones((shape), dtype=np.float32)
         #Puis on la creer
         var = tf.get_variable(name=name, initializer=init, dtype=tf.float32)
         #actualisation du nombre de variables dans le graph

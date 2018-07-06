@@ -31,6 +31,9 @@ def ce2Dloss(y, y_ref, name="ce2Dloss"):
         y = tf.clip_by_value(y, 1e-10, 1-1e-10)
         return tf.reduce_mean(-y_ref*tf.log(y) - (1-y_ref)*tf.log(1-y))
 
+def compute_acc(y, y_ref):
+    return np.mean(np.argmax(y,axis=1)==np.argmax(y_ref,axis=1))
+
 #Pooling functions
 
 def mask(rep, tile, one):
