@@ -65,7 +65,7 @@ class Net(object):
             if(init is None):
                 init = self.default_init
             if(init=="normal"):
-                param = (2/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
+                stddev = (2/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
             elif(init=="uniform"):
                 stddev = (6/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
             stddev *= self.std_coef
@@ -94,11 +94,9 @@ class Net(object):
                 init = self.default_init
             if(init=="normal"):
                 stddev = (2/(in_size+out_size))**0.5
-                print("bonjour")
             elif(init=="uniform"):
                 stddev = (6/(in_size+out_size))**0.5
             stddev *= self.std_coef
-            print(stddev)
             #Puis on initialise les variables
             w = self.var([in_size, out_size], param=stddev, init=init, name="weigth")
             b = self.var([out_size], param=0, init=init, name="bias")
