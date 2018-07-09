@@ -1,10 +1,14 @@
-import tensorflow as tf
 import numpy as np
-import Net as cn
 import time
+import os
+import csv
 import datetime
-from Batch.Cifar10Batch import Cifar10Batch
+
+
+import Net as cn
+import tensorflow as tf
 import HandyTensorFunctions as htf
+from Batch.Cifar10Batch import Cifar10Batch
 
 """
 For my ally is the Force, and a powerful ally it is. Life creates it, makes it
@@ -13,36 +17,93 @@ crude matter. You must feel the Force around you; here, between you, me, the
 tree, the rock, everywhere, yes. Even between the land and the ship.
 """
 
-# print("op")
-# for op in self.graph.get_operations():
-#     print(op.name)
-# print()
-# print("node")
-# for node in self.graph.as_graph_def().node:
-#     print(node.name)
+def dump_csv(dir, name, i_dict):
+
+    #Si le dossier de sauvegarde n'est pas la
+    if(not os.path.exists(dir)):
+
+        #On le cree
+        os.mkdir(dir)
+
+    #Maintenant, on gere le cas ou le fichier n'est pas la
+    if(not os.path.exists(dir+"/"+name)):
+
+        #Si le fichier n'existe pas, on le cree
+        with open(dir+"/"+name, "w") as csv_file:
+
+            spam_writer = csv.writer(csv_file, delimiter=";", lineterminator="\n")
+
+            spam_writer.writerow([col for col in i_dict])
+
+            data_length = len(next(iter(mydict.values())))
+            for i in range(data_length):
+                spam_writer.writerow([i_dict[col][i] for col in i_dict])
+
+    else:
+
+        #Sinon, on l'append
+        with open(dir+"/"+name, "a") as csv_file:
+
+            spam_writer = csv.writer(csv_file, delimiter=";", lineterminator="\n")
+
+            data_length = len(next(iter(mydict.values())))
+            for i in range(data_length):
+                spam_writer.writerow([i_dict[col][i] for col in i_dict])
+
+def load_last_dump(path):
+
+    #Lecture du fichier
+
+    with open(path, "r") as csv_file:
+
+        sapm_reader = csv.reader(csv_file, delimiter=";", lineterminator="\n")
+
+        i_dict = {}
+        row_count = 0
+        for row in spamreader:
+            if(row_count == 0):
+                for col in row:
+                    i_dict[col] = []
+            else:
+                for col in 
+
 
 class Model(object):
 
     def __init__(self, **kwargs):
-
-        self.name = "default_model"
 
         self.reset(**kwargs)
 
 
     def reset(self, **kwargs):
 
+        #On reset le graph et ses parametres
         self.graph = tf.Graph()
         self.graph_param = kwargs
 
+        #Gestion du nom du graph (ie sauvegarde)
+        self.name = "default_model"
         if("name" in kwargs):
             self.name = kwargs["name"]
-        else:
-            self.name = "default_model"
 
+        #Gestion de la restauration du graph
+        restore = False
+        if("restore" in kwargs):
+            restore = kwargs["restore"]
+
+        #Initialisation du graph de calcule
         with self.graph.as_default():
+
+            #Appelle de la fonction reset
             self.is_training = tf.placeholder(tf.bool, name='is_training')
             self.reset_op(**kwargs)
+
+            #On se donne un sauver
+            self.saver = tf.train.Saver()
+
+            #On charge le graph s'il faut
+            if(False):
+                pass
 
         trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 
@@ -50,7 +111,7 @@ class Model(object):
         for trainable in trainables:
             self.sess_state[trainable.name] = (trainable, None)
 
-    def train(self, batch, epochs, batch_size=100, display=100):
+    def train(self, batch, epochs, batch_size=100, display=100, save=100):
 
         with tf.Session(graph=self.graph) as sess:
 
@@ -66,11 +127,23 @@ class Model(object):
             count = 0
             while(batch.epoch_count()<epochs):
 
-                #On effectue le trainning
+                #Initialisation des varaibles pour calculer le temps
                 alepsed_time = time.time()
                 delta_epoch = batch.epoch_count()
+
+                #On effectue le trainning
                 for i in range(display):
+
+                    #Entrainement
                     debug = self.train_op(sess, batch, count)
+
+                    #On sauve s'il le faut
+                    if(count%save == 0):
+                        self.saver.save(sess,
+                                        self.name+"/save.ckpt",
+                                        global_step=count)
+
+                    #Actualisation du compteur d'entrainement
                     count += 1
 
                 #On calcule l'avancement et le temps ecoule
@@ -81,6 +154,8 @@ class Model(object):
                 progrssion = batch.epoch_count()/epochs
 
                 #On debug dans la console
+
+                #Barre de chargement
                 line = "["
                 bar_size = 20
                 for i in range(bar_size):
@@ -90,6 +165,7 @@ class Model(object):
                         line += " "
                 line += "] %2.1f"%(100*progrssion) + "% "
 
+                #Affichage du temps
                 hours, rem = divmod(remaining_time.seconds, 3600)
                 minutes, seconds = divmod(rem, 60)
                 line += "%2d day(s), %2dh%2dm%2ds"%(remaining_time.days,
@@ -97,6 +173,7 @@ class Model(object):
                                                     minutes,
                                                     seconds)
 
+                #Affichage des donnees specifiques au model
                 if(not debug is None and not debug is {}):
                     line += ", "
                 for debug_name in debug:
@@ -202,5 +279,5 @@ class MnistModel(Model):
 
 
 
-model = MnistModel()
-model.train(batch=Cifar10Batch(), epochs=10)
+#model = MnistModel()
+#model.train(batch=Cifar10Batch(), epochs=10, display=10)
