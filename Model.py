@@ -43,6 +43,9 @@ class Model(object):
 
         with tf.Session(graph=self.graph) as self.sess:
 
+            print("\nStarting training:")
+            print("Graph name: " + str(self.name))
+
             self.sess.run(tf.global_variables_initializer())
             batch.reset()
 
@@ -77,9 +80,14 @@ class Model(object):
                                                     hours,
                                                     minutes,
                                                     seconds)
+
+                if(not debug is None and not debug is {}):
+                    line += ", "
+                for debug_name in debug:
+                    line += debug_name + ": %2.2f"%(debug[debug_name])
                 print(line, end='\r')
 
-                #print(str(remaining_time) + " " + str(debug) + " " + str(count), end='\r')
+            print()
 
     def train_op(self, count):
         raise NotImplementedError
@@ -134,6 +142,11 @@ class MnistModel(Model):
 
     def reset_op(self, **kwargs):
 
+        if("name" in kwargs):
+            self.name = kwargs["name"]
+        else:
+            self.name = "default"
+
         clas = Classifier('clas', self.is_training)
         clas.set_net({"layer":"relu"})
 
@@ -159,7 +172,7 @@ class MnistModel(Model):
         test_x, test_y_ref = batch.test(1000)
         test_y = self.clas_output.eval(session=self.sess,feed_dict={self.clas_input:test_x})
 
-        return htf.compute_acc(test_y, test_y_ref)
+        return {"acc" : htf.compute_acc(test_y, test_y_ref)}
 
 
 
