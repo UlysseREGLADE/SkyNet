@@ -2,6 +2,7 @@ import numpy as np
 import time
 import os
 import csv
+import shutil
 import datetime
 
 
@@ -35,7 +36,7 @@ def dump_csv(dir, name, i_dict):
 
             spam_writer.writerow([col for col in i_dict])
 
-            data_length = len(next(iter(mydict.values())))
+            data_length = len(next(iter(i_dict.values())))
             for i in range(data_length):
                 spam_writer.writerow([i_dict[col][i] for col in i_dict])
 
@@ -46,26 +47,28 @@ def dump_csv(dir, name, i_dict):
 
             spam_writer = csv.writer(csv_file, delimiter=";", lineterminator="\n")
 
-            data_length = len(next(iter(mydict.values())))
+            data_length = len(next(iter(i_dict.values())))
             for i in range(data_length):
                 spam_writer.writerow([i_dict[col][i] for col in i_dict])
 
-def load_last_dump(path):
+#TODO: Read the last line of a .csv
 
-    #Lecture du fichier
-
-    with open(path, "r") as csv_file:
-
-        sapm_reader = csv.reader(csv_file, delimiter=";", lineterminator="\n")
-
-        i_dict = {}
-        row_count = 0
-        for row in spamreader:
-            if(row_count == 0):
-                for col in row:
-                    i_dict[col] = []
-            else:
-                for col in 
+# def load_last_dump(path):
+#
+#     #Lecture du fichier
+#
+#     with open(path, "r") as csv_file:
+#
+#         sapm_reader = csv.reader(csv_file, delimiter=";", lineterminator="\n")
+#
+#         i_dict = {}
+#         row_count = 0
+#         for row in spamreader:
+#             if(row_count == 0):
+#                 for col in row:
+#                     i_dict[col] = []
+#             else:
+#                 for col in
 
 
 class Model(object):
@@ -91,6 +94,9 @@ class Model(object):
         if("restore" in kwargs):
             restore = kwargs["restore"]
 
+        #On reset le compte de l'entrainement
+        self.count = 0
+
         #Initialisation du graph de calcule
         with self.graph.as_default():
 
@@ -101,15 +107,13 @@ class Model(object):
             #On se donne un sauver
             self.saver = tf.train.Saver()
 
-            #On charge le graph s'il faut
-            if(False):
-                pass
+            #TODO: On charge le graph s'il faut
+
+        #On supprime le dossier de sauvegarde s'il faut
+        if(not restore and os.path.exists(self.name)):
+            shutil.rmtree(self.name)
 
         trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-
-        self.sess_state = {}
-        for trainable in trainables:
-            self.sess_state[trainable.name] = (trainable, None)
 
     def train(self, batch, epochs, batch_size=100, display=100, save=100):
 
@@ -124,7 +128,7 @@ class Model(object):
             batch.reset()
 
             #Boucle d'entrainnement
-            count = 0
+            to_dump = {}
             while(batch.epoch_count()<epochs):
 
                 #Initialisation des varaibles pour calculer le temps
@@ -135,16 +139,32 @@ class Model(object):
                 for i in range(display):
 
                     #Entrainement
-                    debug = self.train_op(sess, batch, count)
+                    debug = self.train_op(sess, batch)
+                    debug["count"] = self.count
+
+                    #Gestion des donnes a dumper dans le .csv
+                    if(to_dump == {}):
+                        for data in debug:
+                            to_dump[data] = [debug[data]]
+                    else:
+                        for data in debug:
+                            to_dump[data].append(debug[data])
 
                     #On sauve s'il le faut
-                    if(count%save == 0):
+                    if(self.count%save == 0):
+
+                        #On sauve l'etat de la session
                         self.saver.save(sess,
                                         self.name+"/save.ckpt",
-                                        global_step=count)
+                                        global_step=self.count)
+
+                        #Et on sauve le csv
+                        if(to_dump != {}):
+                            dump_csv(self.name, "dump.csv", to_dump)
+                            to_dump = {}
 
                     #Actualisation du compteur d'entrainement
-                    count += 1
+                    self.count += 1
 
                 #On calcule l'avancement et le temps ecoule
                 delta_epoch = batch.epoch_count() - delta_epoch
@@ -177,32 +197,12 @@ class Model(object):
                 if(not debug is None and not debug is {}):
                     line += ", "
                 for debug_name in debug:
-                    line += debug_name + ": %2.2f"%(debug[debug_name])
+                    line += debug_name + ": %.2f"%(debug[debug_name])
                 print(line, end='\r')
 
             print()
 
-    def sess_to_numpy(self, sess):
-
-        for trainable in self.sess_state:
-            self.sess_state[trainable] = sess.run(trainable)
-
-    def numpy_to_sess(self):
-
-
-        self.reset(**self.graph_param)
-
-        with self.graph.as_default():
-            sess = tf.Session(graph=self.graph)
-            sess.run(tf.global_variables_initializer())
-
-            for trainable in self.sess_state:
-                assign = tf.assign(trainable, self.sess_state[trainable])
-                sess.run(assign)
-
-        return sess
-
-    def train_op(self, sess, batch, count):
+    def train_op(self, sess, batch):
         raise NotImplementedError
 
     def reset_op(self, **kwargs):
@@ -266,7 +266,7 @@ class MnistModel(Model):
         self.clas_loss = htf.celoss(self.clas_output, self.clas_ref_output)
         self.clas_trainer = clas.trainer(self.clas_loss, tf.train.AdamOptimizer(0.0002, 0.5))
 
-    def train_op(self, sess, batch, count):
+    def train_op(self, sess, batch):
 
         batch_x, batch_y_ref = batch.train(100)
         sess.run(self.clas_trainer,feed_dict={self.clas_input:batch_x,
@@ -279,5 +279,5 @@ class MnistModel(Model):
 
 
 
-#model = MnistModel()
-#model.train(batch=Cifar10Batch(), epochs=10, display=10)
+model = MnistModel()
+model.train(batch=Cifar10Batch(), epochs=10, display=100, save=100)
