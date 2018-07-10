@@ -68,8 +68,13 @@ def unpool(x, size, mask_size=None, i_mask=None, strides=2, name="unpool"):
         #return the unpooled result
         return l_y*i_mask
 
-def pool(x, size, i_mask=False, strides=2, name="pool"):
+def pool(x, i_mask=False, strides=2, name="pool"):
     with tf.variable_scope(name):
+
+        #Extracting the size of the input
+        shape = x.get_shape().as_list()
+        size = shape[1]
+
         #We adjust image size to the strides
         l_pad1, l_pad2 = 0, 0
         if(size%strides != 0):

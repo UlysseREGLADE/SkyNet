@@ -1,13 +1,12 @@
-import numpy as np
-import time
 import os
 import csv
+import time
 import shutil
 import datetime
-
+import numpy as np
+import tensorflow as tf
 
 import Net as cn
-import tensorflow as tf
 import HandyTensorFunctions as htf
 from Batch.Cifar10Batch import Cifar10Batch
 
@@ -53,22 +52,39 @@ def dump_csv(dir, name, i_dict):
 
 #TODO: Read the last line of a .csv
 
-# def load_last_dump(path):
-#
-#     #Lecture du fichier
-#
-#     with open(path, "r") as csv_file:
-#
-#         sapm_reader = csv.reader(csv_file, delimiter=";", lineterminator="\n")
-#
-#         i_dict = {}
-#         row_count = 0
-#         for row in spamreader:
-#             if(row_count == 0):
-#                 for col in row:
-#                     i_dict[col] = []
-#             else:
-#                 for col in
+def load_last_dump(path):
+
+    #Lecture du fichier
+
+    #On initialise les variables a None
+    fisrt_ligne, last_ligne = None, None
+
+    #On lit la premiere ligne
+    with open(path, "r") as csv_file:
+
+        spam_reader = csv.reader(csv_file, delimiter=";", lineterminator="\n")
+        for row in spam_reader:
+            fisrt_ligne = row
+            break
+
+    #Ainsi que la derniere
+    with open(path, "r") as csv_file:
+
+        spam_reader = csv.reader(csv_file, delimiter=";", lineterminator="\n")
+        for row in reversed(list(spam_reader)):
+            last_ligne = row
+            break
+
+    #Maintenant, si la lecture s'est bien passee
+    if(not fisrt_ligne is None and not last_ligne is None):
+        ret = {}
+        for i in range(len(fisrt_ligne)):
+            ret[fisrt_ligne[i]] = last_ligne[i]
+
+        return ret
+
+    #Sinon, on retourne une erreur
+    raise OSError
 
 
 class Model(object):
@@ -90,12 +106,9 @@ class Model(object):
             self.name = kwargs["name"]
 
         #Gestion de la restauration du graph
-        restore = False
+        self.restore = True
         if("restore" in kwargs):
-            restore = kwargs["restore"]
-
-        #On reset le compte de l'entrainement
-        self.count = 0
+            self.restore = kwargs["restore"]
 
         #Initialisation du graph de calcule
         with self.graph.as_default():
@@ -107,10 +120,8 @@ class Model(object):
             #On se donne un sauver
             self.saver = tf.train.Saver()
 
-            #TODO: On charge le graph s'il faut
-
         #On supprime le dossier de sauvegarde s'il faut
-        if(not restore and os.path.exists(self.name)):
+        if(not self.restore and os.path.exists(self.name)):
             shutil.rmtree(self.name)
 
         trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
@@ -127,6 +138,19 @@ class Model(object):
             sess.run(tf.global_variables_initializer())
             batch.reset()
 
+            #On reset le compte
+            count = 0
+
+            #On charge la derniere session s'il le faut
+            if(self.restore and os.path.exists(self.name+"/dump.csv")):
+
+                print("Last checkpoint loaded from: " + self.name+"/dump.csv")
+
+                last_dump = load_last_dump(self.name+"/"+"dump.csv")
+                count = float(last_dump["count"])
+
+                self.saver.restore(sess, self.name+"/save.ckpt")
+
             #Boucle d'entrainnement
             to_dump = {}
             while(batch.epoch_count()<epochs):
@@ -140,7 +164,7 @@ class Model(object):
 
                     #Entrainement
                     debug = self.train_op(sess, batch)
-                    debug["count"] = self.count
+                    debug["count"] = count
 
                     #Gestion des donnes a dumper dans le .csv
                     if(to_dump == {}):
@@ -151,12 +175,10 @@ class Model(object):
                             to_dump[data].append(debug[data])
 
                     #On sauve s'il le faut
-                    if(self.count%save == 0):
+                    if(count%save == 0):
 
                         #On sauve l'etat de la session
-                        self.saver.save(sess,
-                                        self.name+"/save.ckpt",
-                                        global_step=self.count)
+                        self.saver.save(sess, self.name+"/save.ckpt")
 
                         #Et on sauve le csv
                         if(to_dump != {}):
@@ -164,7 +186,7 @@ class Model(object):
                             to_dump = {}
 
                     #Actualisation du compteur d'entrainement
-                    self.count += 1
+                    count += 1
 
                 #On calcule l'avancement et le temps ecoule
                 delta_epoch = batch.epoch_count() - delta_epoch
@@ -222,17 +244,19 @@ class Classifier(cn.Net):
     def net(self, l_l):
         #Construction du classifieur
         with tf.variable_scope("conv1_layer"):
-            l_l = self.conv(l_l, 8)
+            l_l = self.conv(l_l, 64, kernel=5)
             l_l = tf.nn.relu(l_l)
-            l_l = htf.pool(l_l, 32)
+            l_l = htf.pool(l_l)
+            l_l = tf.nn.lrn(l_l, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm')
 
         with tf.variable_scope("conv2_layer"):
-            l_l = self.conv(l_l, 16)
+            l_l = self.conv(l_l, 64, kernel=5)
             l_l = tf.nn.relu(l_l)
-            l_l = htf.pool(l_l, 16)
+            l_l = htf.pool(l_l)
+            l_l = tf.nn.lrn(l_l, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm')
 
         with tf.variable_scope("fcon1_layer"):
-            l_l = self.fcon(l_l, 100)
+            l_l = self.fcon(l_l, 256)
             l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("fcon2_layer"):
@@ -243,11 +267,6 @@ class Classifier(cn.Net):
 class MnistModel(Model):
 
     def reset_op(self, **kwargs):
-
-        if("name" in kwargs):
-            self.name = kwargs["name"]
-        else:
-            self.name = "default"
 
         clas = Classifier('clas', self.is_training)
         clas.set_net()
@@ -283,4 +302,4 @@ class MnistModel(Model):
 
 
 model = MnistModel()
-model.train(batch=Cifar10Batch(), epochs=1, display=10, save=100)
+model.train(batch=Cifar10Batch(), epochs=10, display=10, save=100)
