@@ -195,9 +195,8 @@ class Model(object):
 
                 #Affichage des donnees specifiques au model
                 if(not debug is None and not debug is {}):
-                    line += ", "
-                for debug_name in debug:
-                    line += debug_name + ": %.2f"%(debug[debug_name])
+                    for debug_name in debug:
+                        line += ", " + debug_name + ": %.2f"%(debug[debug_name])
                 print(line, end='\r')
 
             print()
@@ -264,20 +263,24 @@ class MnistModel(Model):
                                               name="pi_ref_output")
 
         self.clas_loss = htf.celoss(self.clas_output, self.clas_ref_output)
-        self.clas_trainer = clas.trainer(self.clas_loss, tf.train.AdamOptimizer(0.0002, 0.5))
+        self.clas_trainer = clas.trainer(self.clas_loss,
+                                         tf.train.AdamOptimizer(0.0002, 0.5))
 
     def train_op(self, sess, batch):
 
         batch_x, batch_y_ref = batch.train(100)
-        sess.run(self.clas_trainer,feed_dict={self.clas_input:batch_x,
-                                                   self.clas_ref_output:batch_y_ref})
+        _, batch_y = sess.run((self.clas_trainer, self.clas_output),
+                              feed_dict={self.clas_input:batch_x,
+                                         self.clas_ref_output:batch_y_ref})
 
         test_x, test_y_ref = batch.test(1000)
-        test_y = self.clas_output.eval(session=sess,feed_dict={self.clas_input:test_x})
+        test_y = self.clas_output.eval(session=sess,
+                                       feed_dict={self.clas_input:test_x})
 
-        return {"acc" : htf.compute_acc(test_y, test_y_ref)}
+        return {"acc_test" : htf.compute_acc(test_y, test_y_ref),
+                "acc_train" : htf.compute_acc(batch_y, batch_y_ref)}
 
 
 
 model = MnistModel()
-model.train(batch=Cifar10Batch(), epochs=10, display=100, save=100)
+model.train(batch=Cifar10Batch(), epochs=1, display=10, save=100)
