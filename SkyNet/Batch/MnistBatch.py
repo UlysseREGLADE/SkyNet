@@ -1,5 +1,5 @@
 import tensorflow as tf
-from Batch import Batch
+from SkyNet.Batch import Batch
 
 class MnistBatch(Batch.Batch):
 

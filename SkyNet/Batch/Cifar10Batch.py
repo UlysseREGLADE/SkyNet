@@ -1,11 +1,11 @@
 import numpy as np
 import tarfile
 import requests
-from Batch import Batch
+from SkyNet.Batch.Batch import Batch
 import os
 import pickle
 
-class Cifar10Batch(Batch.Batch):
+class Cifar10Batch(Batch):
 
     def load(self):
 
