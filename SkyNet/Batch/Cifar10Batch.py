@@ -72,7 +72,7 @@ class Cifar10Batch(Batch):
 
         #Initialisation du random pour le training
         self.rd_training = np.arange(50000)
-        np.random.shuffle(np.arange(50000))
+        np.random.shuffle(self.rd_training)
 
         #On debug le chargement de cifra
         print("Loading done:")
@@ -96,7 +96,7 @@ class Cifar10Batch(Batch):
         else:
 
             self.rd_training = np.arange(50000)
-            np.random.shuffle(np.arange(50000))
+            np.random.shuffle(self.rd_training)
             images = self.train_images[self.rd_training[:size]]
             labels = self.train_labels[self.rd_training[:size]]
 

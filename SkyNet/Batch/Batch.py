@@ -1,14 +1,12 @@
-import tensorflow as tf
-
 class Batch(object):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         self.train_size = None
         self.test_size = None
         self.count = 0
 
-        self.load()
+        self.load(**kwargs)
 
         if(self.train_size is None or self.test_size is None):
             raise AttributeError
@@ -33,7 +31,7 @@ class Batch(object):
 
     def test(self, size):
         size  = min(self.train_size, size)
-        return self.train_op(size)
+        return self.test_op(size)
 
     def test_op(self, size):
         raise NotImplementedError
