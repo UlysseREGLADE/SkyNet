@@ -101,7 +101,7 @@ class Model(object):
         self.graph_param = kwargs
 
         #Gestion du nom du graph (ie sauvegarde)
-        self.name = "default_model"
+        self.name = "piv_model"
         if("name" in kwargs):
             self.name = kwargs["name"]
 

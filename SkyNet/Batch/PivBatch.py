@@ -1,7 +1,7 @@
 import os
 import h5py
 import numpy as np
-from Batch import Batch
+from SkyNet.Batch.Batch import Batch
 
 #Le nombre d'images par .h5py
 NB_IMG_H5PY = 128000
@@ -22,7 +22,7 @@ def load_h5py(file_path):
 #La classe a proprement parler
 class PivBatch(Batch):
 
-    def load(self, path = "/run/media/ulysser/Seagate Expansion Drive/MachineLearning/HDF5Data"):
+    def load(self, path = "piv_database"):
 
         self.path = path
 
@@ -64,6 +64,9 @@ class PivBatch(Batch):
             print("train set size: " + str(self.train_size))
             print("test set size: " + str(self.test_size))
 
+        else:
+            print("No file at the specified path")
+
     def train_op(self, size):
 
         #On verifie si on doit charger le fichier suivant
@@ -102,7 +105,6 @@ class PivBatch(Batch):
 
         #On actualise le nombre de testes
         self.test_count += size
-        print(self.test_count)
 
         #Si on a tire trop de fichiers, on change de fichier
         if(not self.test_count < NB_IMG_H5PY):
