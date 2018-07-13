@@ -126,7 +126,7 @@ class Model(object):
 
         trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 
-    def train(self, batch, epochs, batch_size=100, display=100, save=100):
+    def train(self, batch, epochs, display=100, save=100):
 
         with tf.Session(graph=self.graph) as sess:
 
@@ -147,7 +147,7 @@ class Model(object):
                 print("Last checkpoint loaded from: " + self.name+"/dump.csv")
 
                 last_dump = load_last_dump(self.name+"/"+"dump.csv")
-                count = float(last_dump["count"])
+                count = int(float(last_dump["count"]))
 
                 self.saver.restore(sess, self.name+"/save.ckpt")
 
@@ -163,7 +163,7 @@ class Model(object):
                 for i in range(display):
 
                     #Entrainement
-                    debug = self.train_op(sess, batch)
+                    debug = self.train_op(sess, batch, count)
                     debug["count"] = count
 
                     #Gestion des donnes a dumper dans le .csv
@@ -223,11 +223,8 @@ class Model(object):
 
             print()
 
-    def train_op(self, sess, batch):
+    def train_op(self, sess, batch, count):
         raise NotImplementedError
 
     def reset_op(self, **kwargs):
         raise NotImplementedError
-
-    def output(i_input):
-        pass

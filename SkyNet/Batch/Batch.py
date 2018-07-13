@@ -9,10 +9,10 @@ class Batch(object):
         self.load(**kwargs)
 
         if(self.train_size is None or self.test_size is None):
-            raise AttributeError
+            raise ValueError("self.train_size and self.train_size must be defined in load")
 
     def load(self):
-        raise NotImplementedError
+        raise NotImplementedError("load must be implemented")
 
     def reset(self):
         self.count = 0
@@ -27,11 +27,11 @@ class Batch(object):
         return ret
 
     def train_op(self, size):
-        raise NotImplementedError
+        raise NotImplementedError("train_op must be implemented")
 
     def test(self, size):
         size  = min(self.train_size, size)
         return self.test_op(size)
 
     def test_op(self, size):
-        raise NotImplementedError
+        raise NotImplementedError("test_op must be implemented")

@@ -28,7 +28,7 @@ def l2loss(y, y_ref, name="l2loss"):
 
 def ce2Dloss(y, y_ref, name="ce2Dloss"):
     with tf.variable_scope(name):
-        y = tf.clip_by_value(y, 1e-10, 1-1e-10)
+        y = tf.clip_by_value(y, 1e-10, 1)
         return tf.reduce_mean(-y_ref*tf.log(y) - (1-y_ref)*tf.log(1-y))
 
 def compute_acc(y, y_ref):

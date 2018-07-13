@@ -65,7 +65,7 @@ class PivBatch(Batch):
             print("test set size: " + str(self.test_size))
 
         else:
-            print("No file at the specified path")
+            raise IOError("Not able to open the given path")
 
     def train_op(self, size):
 
@@ -75,7 +75,7 @@ class PivBatch(Batch):
             self.cur_file_index += 1
 
             #On verifie s'il faut remelanger les fichiers
-            if(self.cur_file_index > len(self.train_files)):
+            if(not self.cur_file_index < len(self.train_files)):
 
                 np.random.shuffle(self.train_files)
                 self.cur_file_index = 0
