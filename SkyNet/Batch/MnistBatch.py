@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from SkyNet.Batch import Batch
 
@@ -24,7 +25,7 @@ class MnistBatch(Batch.Batch):
         np.random.shuffle(index)
         index = index[:size]
 
-        x_train,y_train=mnist.test.images[index,:],mnist.test.labels[index,:]
+        x_train,y_train=self.mnist.test.images[index,:],self.mnist.test.labels[index,:]
         x_train = x_train.reshape((size, 28, 28, 1))
 
         return x_train, y_train
