@@ -1,12 +1,15 @@
-import tensorflow as tf
-import numpy as np
-
+import os
 import sys
+import numpy as np
 sys.path.append('../')
+import tensorflow as tf
+
 from SkyNet.Net import Net
 from SkyNet.Model import Model
-from SkyNet.Batch.MnistBatch import MnistBatch
 import SkyNet.HandyTensorFunctions as htf
+from SkyNet.Batch.MnistBatch import MnistBatch
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 class Classifier(Net):
 
@@ -62,5 +65,5 @@ class MnistModel(Model):
 
 
 
-model = MnistModel()
+model = MnistModel(name="mnist_model")
 model.train(batch=MnistBatch(), epochs=10, display=10, save=10)

@@ -1,6 +1,9 @@
+import os
 import numpy as np
 import tensorflow as tf
 from SkyNet.Batch import Batch
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 class MnistBatch(Batch.Batch):
 
