@@ -87,6 +87,49 @@ def load_last_dump(path):
     raise OSError
 
 
+class Evaluator(object):
+
+    def __init__(self, model, input_list, output):
+
+        self.model = model
+        self.output = output
+        self.input_list = input_list
+
+    def __enter__(self):
+
+        self.sess = tf.Session(graph = self.model.graph)
+
+        #Initialisation de la session
+
+        with self.model.graph.as_default():
+            saver = tf.train.Saver()
+
+        #On charge la derniere session
+        if(os.path.exists(self.model.name+"/dump.csv")):
+
+            print("Last checkpoint loaded from: " + self.model.name+"/dump.csv")
+            saver.restore(self.sess, self.model.name+"/save.ckpt")
+
+        return self
+
+    def __exit__(self, *args, **kwargs):
+
+        self.sess.close()
+
+    def compute(*i_input):
+
+        self = i_input[0]
+
+        if(len(self.input_list) != len(i_input)-1):
+            raise IndexError("The number of inputs of compute must match the len of input_list")
+
+        feed_dict = {}
+        for i in range(len(self.input_list)):
+            feed_dict[self.input_list[i]] = i_input[i+1]
+
+        return self.output.eval(session=self.sess,
+                                feed_dict=feed_dict)
+
 class Model(object):
 
     def __init__(self, **kwargs):
@@ -101,7 +144,7 @@ class Model(object):
         self.graph_param = kwargs
 
         #Gestion du nom du graph (ie sauvegarde)
-        self.name = "piv_model"
+        self.name = "model"
         if("name" in kwargs):
             self.name = kwargs["name"]
 
@@ -223,8 +266,18 @@ class Model(object):
 
             print()
 
+    def evaluator(self, input_list, output):
+
+        return Evaluator(self, input_list, output)
+
+    def default_evaluator(self):
+
+        return Evaluator(self, self.input_list, self.output)
+
     def train_op(self, sess, batch, count):
+
         raise NotImplementedError
 
     def reset_op(self, **kwargs):
+
         raise NotImplementedError
