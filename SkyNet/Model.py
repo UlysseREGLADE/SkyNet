@@ -87,6 +87,96 @@ def load_last_dump(path):
     raise OSError
 
 
+class Evaluator(object):
+
+    """
+    This class serve as a context manager that internaly opens and close
+    sessions so that the user has not to deal with tensorflow when it commes
+    to using a trained model to make a prediction.
+
+    Example:
+        with model.default_evaluator as eval:
+            output = eval.compute(input)
+
+    Properties:
+        model: a pointer to the parent model
+        input: a list of the placeholder to fill to get the output
+        output: the output node in the model's graph
+    """
+
+    def __init__(self, model, input_list, output):
+
+        """
+        Set the clss properties to the given parameters
+
+        Args:
+            model: a pointer to the parent model
+            input: a list of the placeholder to fill to get the output
+            output: the output node in the model's graph
+        """
+
+        self.model = model
+        self.output = output
+        self.input_list = input_list
+
+    def __enter__(self):
+
+        """
+        Open a tensorflow session that will be used to compute the output.
+        Then load the model from the last checkpoint.
+
+        Return:
+            a pointer to it self
+        """
+
+        self.sess = tf.Session(graph = self.model.graph)
+
+        #Initialisation de la session
+
+        with self.model.graph.as_default():
+            saver = tf.train.Saver()
+
+        #On charge la derniere session
+        if(os.path.exists(self.model.name+"/dump.csv")):
+
+            print("Last checkpoint loaded from: " + self.model.name+"/dump.csv")
+            saver.restore(self.sess, self.model.name+"/save.ckpt")
+
+        return self
+
+    def __exit__(self, *args, **kwargs):
+
+        """
+        Close the tensorflow session to free the CPU or GPU resorce.
+        """
+
+        self.sess.close()
+
+    def compute(*i_input):
+
+        """
+        Compute the output for the given input.
+
+        Args:
+            The number of arguments must match len(self.input_list), and they must
+            be given in the same order.
+
+        Return:
+            The output of the model evaluated on i_input
+        """
+
+        self = i_input[0]
+
+        if(len(self.input_list) != len(i_input)-1):
+            raise IndexError("The number of inputs of compute must match the len of input_list")
+
+        feed_dict = {}
+        for i in range(len(self.input_list)):
+            feed_dict[self.input_list[i]] = i_input[i+1]
+
+        return self.output.eval(session=self.sess,
+                                feed_dict=feed_dict)
+
 class Model(object):
 
     def __init__(self, **kwargs):
@@ -232,8 +322,38 @@ class Model(object):
 
             print()
 
+    def evaluator(self, input_list, output):
+
+        """
+        Allows the user to build an evaluator wich depends on custome input,
+        and that can have an output which is not the default one.
+
+        Args:
+            input: a list of the placeholder to fill to get the output
+            output: the output node in the model's graph
+
+        Return:
+            An evaluator wich points to the current model
+        """
+
+        return Evaluator(self, input_list, output)
+
+    def default_evaluator(self):
+
+        """
+        Allows the user to easily build an evaluator for the current model.
+        To work, self.output and self.input_list must be defined within reset_op.
+
+        Return:
+            An evaluator wich points to the current model
+        """
+
+        return Evaluator(self, self.input_list, self.output)
+
     def train_op(self, sess, batch, count):
+
         raise NotImplementedError
 
     def reset_op(self, **kwargs):
+
         raise NotImplementedError
