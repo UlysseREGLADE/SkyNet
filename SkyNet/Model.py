@@ -101,14 +101,9 @@ class Model(object):
         self.graph_param = kwargs
 
         #Gestion du nom du graph (ie sauvegarde)
-        self.name = "piv_model"
+        self.name = "model"
         if("name" in kwargs):
             self.name = kwargs["name"]
-
-        #Gestion de la restauration du graph
-        self.restore = True
-        if("restore" in kwargs):
-            self.restore = kwargs["restore"]
 
         #Initialisation du graph de calcule
         with self.graph.as_default():
@@ -120,13 +115,23 @@ class Model(object):
             #On se donne un sauver
             self.saver = tf.train.Saver()
 
-        #On supprime le dossier de sauvegarde s'il faut
-        if(not self.restore and os.path.exists(self.name)):
-            shutil.rmtree(self.name)
-
         trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 
-    def train(self, batch, epochs, display=100, save=100):
+    def train(self, batch, epochs, display=100, save=100, overwrite=False):
+
+        """
+        When called this function will start the training of the model, and save
+        it in a folder named with self.name.
+
+        Args:
+            batch: (Batch) the batch generator for the training session
+            epochs: (int) The number of time the the training session goes through the
+                    entier database.
+            display: (int) The refresh rate of the console output
+            save: (int) The saving rate of the model
+            overwrite: (bool) if the folder named self.name already exists,
+                       do we overwrite it or not.
+        """
 
         with tf.Session(graph=self.graph) as sess:
 
@@ -141,8 +146,12 @@ class Model(object):
             #On reset le compte
             count = 0
 
+            #On supprime le dossier de sauvegarde s'il faut
+            if(overwrite and os.path.exists(self.name)):
+                shutil.rmtree(self.name)
+
+            if(not overwrite and os.path.exists(self.name+"/dump.csv")):
             #On charge la derniere session s'il le faut
-            if(self.restore and os.path.exists(self.name+"/dump.csv")):
 
                 print("Last checkpoint loaded from: " + self.name+"/dump.csv")
 

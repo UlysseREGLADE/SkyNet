@@ -60,7 +60,7 @@ class Cifar10Model(Model):
         self.clas_trainer = clas.trainer(self.clas_loss,
                                          tf.train.AdamOptimizer(0.0002, 0.5))
 
-    def train_op(self, sess, batch):
+    def train_op(self, sess, batch, count):
 
         batch_x, batch_y_ref = batch.train(100)
         _, batch_y = sess.run((self.clas_trainer, self.clas_output),

@@ -62,5 +62,5 @@ class MnistModel(Model):
 
 
 
-model = MnistModel()
-model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
+model = MnistModel(name="model_mnist")
+model.train(batch=MnistBatch(), epochs=1, display=10, save=10)
