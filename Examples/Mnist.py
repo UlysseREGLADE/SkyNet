@@ -67,13 +67,8 @@ class MnistModel(Model):
 
 
 
-<<<<<<< HEAD
-model = MnistModel(name="model_mnist")
-model.train(batch=MnistBatch(), epochs=1, display=10, save=10)
-=======
 model = MnistModel(name="mnist_model")
 model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
 
 with model.default_evaluator() as eval:
     eval.compute( np.zeros((1,28,28,1)) )
->>>>>>> ModelEval
