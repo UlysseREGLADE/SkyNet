@@ -56,12 +56,18 @@ class Net(object):
                                                       is_training=is_training)
             return normalized
 
-    def conv(self, x, out_channels, kernel=3, init=None, name="conv"):
+    def conv(self, x, out_channels, kernel=3, init=None, name="conv", padding="SAME"):
         name = self.get_name(name)
         with tf.variable_scope(name):
             #On calcule la variance relative a l'initialisation des poids
             shape = x.get_shape().as_list()
             in_channels = shape[3]
+
+            if(shape[1] is None):
+                shape[1] = 1
+            if(shape[2] is None):
+                shape[2] = 1
+            
             if(init is None):
                 init = self.default_init
             if(init=="normal"):
@@ -76,7 +82,7 @@ class Net(object):
                          name="weigth")
             b = self.var([out_channels], 0, name="bias")
             #Enfin, on retourne ce qu'il faut
-            conv = tf.nn.conv2d(x, w, strides=[1, 1, 1, 1], padding="SAME")
+            conv = tf.nn.conv2d(x, w, strides=[1, 1, 1, 1], padding=padding)
             return (conv + b)
 
     def fcon(self, x, out_size, init=None, name="fcon"):
