@@ -89,13 +89,45 @@ def load_last_dump(path):
 
 class Evaluator(object):
 
+    """
+    This class serve as a context manager that internaly opens and close
+    sessions so that the user has not to deal with tensorflow when it commes
+    to using a trained model to make a prediction.
+
+    Example:
+        with model.default_evaluator as eval:
+            output = eval.compute(input)
+
+    Properties:
+        model: a pointer to the parent model
+        input: a list of the placeholder to fill to get the output
+        output: the output node in the model's graph
+    """
+
     def __init__(self, model, input_list, output):
+
+        """
+        Set the clss properties to the given parameters
+
+        Args:
+            model: a pointer to the parent model
+            input: a list of the placeholder to fill to get the output
+            output: the output node in the model's graph
+        """
 
         self.model = model
         self.output = output
         self.input_list = input_list
 
     def __enter__(self):
+
+        """
+        Open a tensorflow session that will be used to compute the output.
+        Then load the model from the last checkpoint.
+
+        Return:
+            a pointer to it self
+        """
 
         self.sess = tf.Session(graph = self.model.graph)
 
@@ -114,9 +146,24 @@ class Evaluator(object):
 
     def __exit__(self, *args, **kwargs):
 
+        """
+        Close the tensorflow session to free the CPU or GPU resorce.
+        """
+
         self.sess.close()
 
     def compute(*i_input):
+
+        """
+        Compute the output for the given input.
+
+        Args:
+            The number of arguments must match len(self.input_list), and they must
+            be given in the same order.
+
+        Return:
+            The output of the model evaluated on i_input
+        """
 
         self = i_input[0]
 
@@ -268,9 +315,29 @@ class Model(object):
 
     def evaluator(self, input_list, output):
 
+        """
+        Allows the user to build an evaluator wich depends on custome input,
+        and that can have an output which is not the default one.
+
+        Args:
+            input: a list of the placeholder to fill to get the output
+            output: the output node in the model's graph
+
+        Return:
+            An evaluator wich points to the current model
+        """
+
         return Evaluator(self, input_list, output)
 
     def default_evaluator(self):
+
+        """
+        Allows the user to easily build an evaluator for the current model.
+        To work, self.output and self.input_list must be defined within reset_op.
+
+        Return:
+            An evaluator wich points to the current model
+        """
 
         return Evaluator(self, self.input_list, self.output)
 
