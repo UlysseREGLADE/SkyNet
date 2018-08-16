@@ -103,6 +103,40 @@ class Net(object):
             #Enfin, on retourne ce qu'il faut
             return tf.matmul(x, w) + b
 
+    def biLSTM(self, x, num_hidden, pos_timesteps=1, to_output="all"):
+        """
+        Bidirectionnal LSTM layer. inspired by a code from Aymeric Damien
+
+        Args:
+          num_hidden = number of feature you wanna pull from input
+          to_output : a string,"all" to return all lstm outputs,
+            "last" to return only the final output. May also be an index object.
+          timesteps : number of times each lstm cell will be called.
+            Must be one dimension of input x. If None, will take the value of the 2nd
+            dimension of input x.
+        Returns:
+          concatenated outputs of the lstm cells. shape (timesteps, 2 * num_hidden)
+        """
+
+        timesteps = x.get_shape().as_list()[pos_timesteps]
+
+        x = tf.unstack(x, timesteps, pos_timesteps)
+
+        fw_cell = tf.contrib.rnn.BasicLSTMCell(num_hidden)
+        bw_cell = tf.contrib.rnn.BasicLSTMCell(num_hidden)
+        outputs, _, _ = tf.contrib.rnn.static_bidirectional_rnn(fw_cell, bw_cell, x, dtype=tf.float32)
+
+        if to_output == "all" :
+            index = slice(None,None)
+        elif to_output == "last" :
+            index = -1
+        else:
+            index = to_output
+
+        outputs = tf.stack(outputs, axis=pos_timesteps)
+
+        return outputs[index]
+
     def var(self, shape, param=0, init="const", name="var"):
         #On manage le nom de la variable pour ne pas avoir de pb
         name = self.get_name(name)
