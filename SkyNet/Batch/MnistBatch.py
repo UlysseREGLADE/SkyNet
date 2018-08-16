@@ -12,8 +12,12 @@ class MnistBatch(Batch.Batch):
         from tensorflow.examples.tutorials.mnist import input_data
 
         self.mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+
         self.train_size = 60000
         self.test_size = 10000
+
+        self.input_shape = (28, 28, 3)
+        self.output_shape = (10)
 
     def train_op(self, size):
 

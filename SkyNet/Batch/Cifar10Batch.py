@@ -31,6 +31,9 @@ class Cifar10Batch(Batch):
         self.train_size = 50000
         self.test_size = 10000
 
+        self.input_shape = (32, 32, 3)
+        self.output_shape = (10)
+
         self.train_images = np.zeros((50000, 32, 32, 3))
         self.train_labels = np.zeros((50000, 10))
 
