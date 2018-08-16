@@ -3,6 +3,7 @@ import sys
 import numpy as np
 sys.path.append('../')
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 from SkyNet.Net import Net
 from SkyNet.Model import Model
@@ -33,8 +34,9 @@ class FractalMnistModel(Model):
         clas.set_net()
 
         self.input = tf.placeholder(tf.float32,
-                                    shape=[None, None, None, 1],
+                                    shape=[None, None, 1],
                                     name="input")
+        self.reshaped_input = tf.expand_dims(self.input, 0)
 
         self.training_input = tf.placeholder(tf.float32,
                                              shape=[None, 28, 28, 1],
@@ -43,7 +45,8 @@ class FractalMnistModel(Model):
         self.training_output = clas.output(self.training_input)
         self.training_output = tf.reshape(self.training_output, [-1, 10])
 
-        self.output = clas.output(self.input)
+        self.output = clas.output(self.reshaped_input)
+        self.output = tf.squeeze(self.output, [0])
 
         self.ref_output = tf.placeholder(tf.float32,
                                          shape=[None, 10],
@@ -69,8 +72,22 @@ class FractalMnistModel(Model):
         return {"acc_test" : htf.compute_acc(test_y, test_y_ref),
                 "acc_train" : htf.compute_acc(batch_y, batch_y_ref)}
 
+batch = MnistBatch()
 model = FractalMnistModel(name="fractal_mnist_model")
-model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
+#model.train(batch=batch, epochs=10, display=10, save=10)
+
+image = np.zeros((100, 100, 1))
+image[50:78, 50:78, 0] = batch.test(1)[0][0,:,:,0]
 
 with model.default_evaluator() as eval:
-    eval.compute( np.zeros((1,28,28,1)) )
+    res = eval.compute(image)
+    print(res.shape)
+
+    plt.figure()
+    plt.imshow(image[:,:,0])
+    plt.show(False)
+
+    for i in range(10):
+        plt.figure()
+        plt.imshow(res[:,:,i])
+        plt.show(i==10-1)
