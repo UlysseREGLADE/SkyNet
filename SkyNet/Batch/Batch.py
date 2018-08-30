@@ -21,11 +21,11 @@ class Batch(object):
         self.count = 0
 
     def epoch_count(self):
-        return self.count/self.train_size
+        return self.count / self.train_size
 
     def train(self, size):
         ret = self.train_op(size)
-        size  = min(self.train_size, size)
+        size = min(self.train_size, size)
         self.count += size
         return ret
 
@@ -33,7 +33,7 @@ class Batch(object):
         raise NotImplementedError("train_op must be implemented")
 
     def test(self, size):
-        size  = min(self.train_size, size)
+        size = min(self.train_size, size)
         return self.test_op(size)
 
     def test_op(self, size):

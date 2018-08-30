@@ -5,6 +5,7 @@ from SkyNet.Batch.Batch import Batch
 import os
 import pickle
 
+
 class Cifar10Batch(Batch):
 
     def load(self):
@@ -114,7 +115,9 @@ class Cifar10Batch(Batch):
 
         return self.test_images[index], self.test_labels[index]
 
+
 if(__name__ == "__main__"):
+
     batch = Cifar10Batch()
     train = batch.train(100)
     print(train[0].shape, train[1].shape)

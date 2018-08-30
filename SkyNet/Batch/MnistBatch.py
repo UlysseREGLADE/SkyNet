@@ -1,11 +1,11 @@
 import os
 import numpy as np
-import tensorflow as tf
-from SkyNet.Batch import Batch
+from SkyNet.Batch.Batch import Batch
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-class MnistBatch(Batch.Batch):
+
+class MnistBatch(Batch):
 
     def load(self):
 
@@ -16,7 +16,7 @@ class MnistBatch(Batch.Batch):
         self.train_size = 60000
         self.test_size = 10000
 
-        self.input_shape = (28, 28, 3)
+        self.input_shape = (28, 28, 1)
         self.output_shape = (10)
 
     def train_op(self, size):
@@ -32,7 +32,7 @@ class MnistBatch(Batch.Batch):
         np.random.shuffle(index)
         index = index[:size]
 
-        x_train,y_train=self.mnist.test.images[index,:],self.mnist.test.labels[index,:]
+        x_train, y_train = self.mnist.test.images[index, :], self.mnist.test.labels[index, :]
         x_train = x_train.reshape((size, 28, 28, 1))
 
         return x_train, y_train
