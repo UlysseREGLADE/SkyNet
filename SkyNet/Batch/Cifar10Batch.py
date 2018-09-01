@@ -5,6 +5,7 @@ from SkyNet.Batch.Batch import Batch
 import os
 import pickle
 
+
 class Cifar10Batch(Batch):
 
     def load(self):
@@ -30,6 +31,9 @@ class Cifar10Batch(Batch):
         #Alloaction des tableux en memoire et init de la taille
         self.train_size = 50000
         self.test_size = 10000
+
+        self.input_shape = (32, 32, 3)
+        self.output_shape = (10)
 
         self.train_images = np.zeros((50000, 32, 32, 3))
         self.train_labels = np.zeros((50000, 10))
@@ -111,7 +115,9 @@ class Cifar10Batch(Batch):
 
         return self.test_images[index], self.test_labels[index]
 
+
 if(__name__ == "__main__"):
+
     batch = Cifar10Batch()
     train = batch.train(100)
     print(train[0].shape, train[1].shape)
