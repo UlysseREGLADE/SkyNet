@@ -1,6 +1,7 @@
 import numpy as np
 import sys
-sys.path.append('../../')
+if(__name__ == "__main__"):
+    sys.path.append('../../')
 from SkyNet.Batch.Batch import Batch
 
 
@@ -16,22 +17,12 @@ class FractalBatch(Batch):
         self.output_shape = self.parent_batch.output_shape + 1
 
         ratio = self.parent_batch.output_shape / self.output_shape
-        self.train_size = int(self.parent_batch.train_size * ratio)
-        self.test_size = int(self.parent_batch.test_size * ratio)
+        self.train_size = self.parent_batch.train_size
+        self.test_size = self.parent_batch.test_size
 
         self.added_crop = added_crop
 
-    def modify_batch(self, batch):
-
-        i_input, output = batch
-        size = i_input.shape[0]
-        height, width = i_input.shape[1], i_input.shape[2]
-        resized_input = np.zeros([size] + list(self.input_shape))
-
-        x_shift, y_shift = np.random.randint(self.added_crop + 1,
-                                             size=(2, size))
-        x_shift = np.reshape(x_shift, (size, 1, 1))
-        y_shift = np.reshape(y_shift, (size, 1, 1))
+    def get_stack(self, size, width, height):
 
         ar_width, ar_height = np.arange(width), np.arange(height)
         x_coor = np.zeros((height, width))
@@ -39,21 +30,56 @@ class FractalBatch(Batch):
         y_coor = np.zeros((height, width))
         y_coor.T[:] = ar_height
 
-        x_stack, y_stack = np.zeros((2, size, height, width))
-        b_stack = np.ones((size, height, width))
+        x_stack, y_stack = np.zeros((2, size, height, width), dtype=np.int)
+        b_stack = np.ones((size, height, width), dtype=np.int)
         x_stack[:] = x_coor
         y_stack[:] = y_coor
-        x_stack = np.array(x_stack+x_shift, dtype=np.int)
-        y_stack = np.array(y_stack+y_shift, dtype=np.int)
         b_stack *= np.reshape(np.arange(size), (size, 1, 1))
-        b_stack = np.array(b_stack, dtype=np.int)
 
-        resized_input[b_stack, y_stack, x_stack, :] = i_input
+        return b_stack, y_stack, x_stack
 
-        return resized_input, output
+
+    def modify_batch(self, batch):
+
+        i_input, i_output = batch
+        size = i_input.shape[0]
+        height, width = i_input.shape[1], i_input.shape[2]
+        depth = i_input.shape[3]
+
+        # Creation of the positives inputs
+        positive_input = np.zeros([size] + list(self.input_shape))
+        x_shift, y_shift = np.random.randint(self.added_crop + 1,
+                                             size=(2, size, 1, 1))
+
+        b_stack, y_stack, x_stack = self.get_stack(size, height, width)
+
+        positive_input[b_stack, y_stack+y_shift, x_stack+x_shift, :] = i_input
+        positive_i_output = i_output
+
+        # Creation of the negatives inputs
+        back_ground = np.zeros((size,
+                                2*height + self.input_shape[0],
+                                2*width + self.input_shape[1],
+                                depth))
+        back_ground[:, :height, :width, :] = i_input
+        back_ground[:, :height, -width:, :] = i_input
+        back_ground[:, -height:, :width, :] = i_input
+        back_ground[:, -height:, -width:, :] = i_input
+        x_shift = np.random.randint(2*width - 2, size=(size, 1, 1)) + 1
+        y_shift = np.random.randint(2*height - 2, size=(size, 1, 1)) + 1
+
+        b_stack, y_stack, x_stack = self.get_stack(size, self.input_shape[0], self.input_shape[1])
+
+        negative_input = back_ground[b_stack, y_stack+y_shift, x_stack+x_shift, :]
+
+        # Creating of the outputs
+        output = np.zeros((2*size, self.output_shape))
+        output[:size, :-1] = i_output
+        output[size:, -1] = 1
+
+        return np.concatenate([positive_input, negative_input], axis=0), output
 
     def train_op(self, size):
-        size = int(size * self.output_shape / (self.output_shape - 1))
         batch = self.parent_batch.train(size)
         return self.modify_batch(batch)
 
@@ -72,7 +98,9 @@ if(__name__ == "__main__"):
 
     batch_input, batch_output = batch.train(10)
 
-    for i in range(10):
+    print(batch_input.shape)
+
+    for i in range(10, 20):
         plt.figure()
         plt.imshow(batch_input[i,:,:,0])
         plt.show()
