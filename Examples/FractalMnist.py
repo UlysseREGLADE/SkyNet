@@ -77,18 +77,38 @@ batch = FractalBatch(parent_batch=MnistBatch, added_crop=4)
 model = FractalMnistModel(name="fractal_mnist_model")
 #model.train(batch=batch, epochs=10, display=10, save=10)
 
-image = np.zeros((100, 100, 1))
-image[50:82, 50:82, 0] = batch.test(1)[0][0,:,:,0]
+def generate_image(batch=batch.parent_batch, shape=(256, 256), numbers=6):
+
+    image = np.zeros(list(shape) + [1])
+    patchs, _ = batch.test(numbers)
+
+    for i in range(numbers):
+        y_shift = np.random.randint(shape[0] - batch.input_shape[0])
+        x_shift = np.random.randint(shape[1] - batch.input_shape[1])
+        image[y_shift:y_shift+batch.input_shape[0], x_shift:x_shift+batch.input_shape[1], :] = patchs[i]
+
+    return image
+
+np.random.seed(23456745)
+colors = np.ones((11, 4))
+colors[:10, :3] = np.random.rand(10, 3)
+colors[10, :3] = 0
 
 with model.default_evaluator() as eval:
+
+    image = generate_image()
+    plot = np.zeros((image.shape[0], image.shape[1], 4))
+
     res = eval.compute(image)
-    print(res.shape)
+    res[:, :, 10] = (1 - res[:, :, 10])*0.8
+    output = np.einsum('ijk,kl', res, colors)
+    plot[16:-15, 16:-15, :] = output
 
-    plt.figure()
-    plt.imshow(image[:,:,0])
-    plt.show(False)
+    fig = plt.figure(frameon=False)
+    plt.imshow(image[:,:,0], cmap='gray')
+    plt.imshow(plot)
 
-    for i in range(11):
-        plt.figure()
-        plt.imshow(res[:,:,i])
-        plt.show(i==10-1)
+    for i in range(10):
+        plt.text(12+12*i, 18, str(i), color=colors[i], fontsize=12)
+
+    plt.show()
