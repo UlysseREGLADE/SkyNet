@@ -9,13 +9,14 @@ from SkyNet.Net import Net
 from SkyNet.Model import Model
 import SkyNet.HandyTensorFunctions as htf
 from SkyNet.Batch.MnistBatch import MnistBatch
+from SkyNet.Batch.FractalBatch import FractalBatch
 
 class FractalClassifier(Net):
 
     def net(self, l_l):
 
         with tf.variable_scope("frac_fcon_1"):
-            l_l = self.conv(l_l, 256, kernel=28, padding="VALID")
+            l_l = self.conv(l_l, 256, kernel=32, padding="VALID")
             l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("frac_fcon_2"):
@@ -23,7 +24,7 @@ class FractalClassifier(Net):
             l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("frac_fcon_3"):
-            l_l = self.conv(l_l, 10, kernel=1, padding="VALID")
+            l_l = self.conv(l_l, 11, kernel=1, padding="VALID")
             return tf.nn.softmax(l_l)
 
 class FractalMnistModel(Model):
@@ -39,17 +40,17 @@ class FractalMnistModel(Model):
         self.reshaped_input = tf.expand_dims(self.input, 0)
 
         self.training_input = tf.placeholder(tf.float32,
-                                             shape=[None, 28, 28, 1],
+                                             shape=[None, 32, 32, 1],
                                              name="training_input")
 
         self.training_output = clas.output(self.training_input)
-        self.training_output = tf.reshape(self.training_output, [-1, 10])
+        self.training_output = tf.reshape(self.training_output, [-1, 11])
 
         self.output = clas.output(self.reshaped_input)
         self.output = tf.squeeze(self.output, [0])
 
         self.ref_output = tf.placeholder(tf.float32,
-                                         shape=[None, 10],
+                                         shape=[None, 11],
                                          name="ref_output")
 
         self.loss = htf.celoss(self.training_output, self.ref_output)
@@ -72,12 +73,12 @@ class FractalMnistModel(Model):
         return {"acc_test" : htf.compute_acc(test_y, test_y_ref),
                 "acc_train" : htf.compute_acc(batch_y, batch_y_ref)}
 
-batch = MnistBatch()
+batch = FractalBatch(parent_batch=MnistBatch, added_crop=4)
 model = FractalMnistModel(name="fractal_mnist_model")
 #model.train(batch=batch, epochs=10, display=10, save=10)
 
 image = np.zeros((100, 100, 1))
-image[50:78, 50:78, 0] = batch.test(1)[0][0,:,:,0]
+image[50:82, 50:82, 0] = batch.test(1)[0][0,:,:,0]
 
 with model.default_evaluator() as eval:
     res = eval.compute(image)
@@ -87,7 +88,7 @@ with model.default_evaluator() as eval:
     plt.imshow(image[:,:,0])
     plt.show(False)
 
-    for i in range(10):
+    for i in range(11):
         plt.figure()
         plt.imshow(res[:,:,i])
         plt.show(i==10-1)
