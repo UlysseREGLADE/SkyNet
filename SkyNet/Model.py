@@ -80,7 +80,7 @@ def load_last_dump(path):
         ret = {}
         for i in range(len(fisrt_ligne)):
             ret[fisrt_ligne[i]] = last_ligne[i]
-        print(ret)
+
         return ret
 
     #Sinon, on retourne une erreur

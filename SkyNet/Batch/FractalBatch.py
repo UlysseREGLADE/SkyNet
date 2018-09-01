@@ -99,6 +99,7 @@ if(__name__ == "__main__"):
     batch_input, batch_output = batch.train(10)
 
     print(batch_input.shape)
+    print(batch_output)
 
     for i in range(10, 20):
         plt.figure()
