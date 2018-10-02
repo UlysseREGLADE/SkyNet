@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from SkyNet.Net import Net
 from SkyNet.Model import Model
 import SkyNet.HandyTensorFunctions as htf
+import SkyNet.HandyNumpyFunctions as hnf
 from SkyNet.Batch.MnistBatch import MnistBatch
 from SkyNet.Batch.FractalBatch import FractalBatch
 
@@ -70,8 +71,8 @@ class FractalMnistModel(Model):
         test_y = self.training_output.eval(session=sess,
                                            feed_dict={self.training_input:test_x})
 
-        return {"acc_test" : htf.compute_acc(test_y, test_y_ref),
-                "acc_train" : htf.compute_acc(batch_y, batch_y_ref)}
+        return {"acc_test" : hnf.compute_acc(test_y, test_y_ref),
+                "acc_train" : hnf.compute_acc(batch_y, batch_y_ref)}
 
 batch = FractalBatch(parent_batch=MnistBatch, added_crop=4)
 model = FractalMnistModel(name="fractal_mnist_model")

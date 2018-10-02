@@ -7,6 +7,7 @@ from SkyNet.Net import Net
 from SkyNet.Model import Model
 from SkyNet.Batch.Cifar10Batch import Cifar10Batch
 import SkyNet.HandyTensorFunctions as htf
+import SkyNet.HandyNumpyFunctions as hnf
 
 class Classifier(Net):
 
@@ -71,8 +72,8 @@ class Cifar10Model(Model):
         test_y = self.clas_output.eval(session=sess,
                                        feed_dict={self.clas_input:test_x})
 
-        return {"acc_test" : htf.compute_acc(test_y, test_y_ref),
-                "acc_train" : htf.compute_acc(batch_y, batch_y_ref)}
+        return {"acc_test" : hnf.compute_acc(test_y, test_y_ref),
+                "acc_train" : hnf.compute_acc(batch_y, batch_y_ref)}
 
 
 

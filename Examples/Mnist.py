@@ -7,6 +7,7 @@ import tensorflow as tf
 from SkyNet.Net import Net
 from SkyNet.Model import Model
 import SkyNet.HandyTensorFunctions as htf
+import SkyNet.HandyNumpyFunctions as hnf
 from SkyNet.Batch.MnistBatch import MnistBatch
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -62,8 +63,8 @@ class MnistModel(Model):
         test_y = self.output.eval(session=sess,
                                   feed_dict={self.input:test_x})
 
-        return {"acc_test" : htf.compute_acc(test_y, test_y_ref),
-                "acc_train" : htf.compute_acc(batch_y, batch_y_ref)}
+        return {"acc_test" : hnf.compute_acc(test_y, test_y_ref),
+                "acc_train" : hnf.compute_acc(batch_y, batch_y_ref)}
 
 
 
