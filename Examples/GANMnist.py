@@ -3,10 +3,12 @@ import sys
 import numpy as np
 sys.path.append('../')
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 from SkyNet.Net import Net
 from SkyNet.Model import Model
 import SkyNet.HandyTensorFunctions as htf
+import SkyNet.HandyNumpyFunctions as hnf
 from SkyNet.Batch.MnistBatch import MnistBatch
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -24,10 +26,11 @@ class Discriminer(Net):
             l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("fcon3_layer"):
-            l_l = self.fcon(l_l, 10)
-            return tf.nn.softmax(l_l)
+            l_l = self.fcon(l_l, 11)
+            l_l = tf.nn.softmax(l_l)
+            return l_l[:, :10]
 
-class Genrater(Net):
+class Generator(Net):
 
     def net(self, l_l):
         #Construction du classifieur
@@ -40,8 +43,9 @@ class Genrater(Net):
             l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("fcon3_layer"):
-            l_l = self.fcon(l_l, 10)
-            return tf.nn.softmax(l_l)
+            l_l = self.fcon(l_l, 784)
+            l_l = tf.reshape(l_l, (-1, 28, 28, 1))
+            return tf.nn.sigmoid(l_l)
 
 
 class GANMnistModel(Model):
@@ -50,7 +54,7 @@ class GANMnistModel(Model):
 
         disc = Discriminer('disc', self.is_training)
         disc.set_net()
-        gen = Generater('gen', self.is_training)
+        gen = Generator('gen', self.is_training)
         gen.set_net()
 
         self.gen_input = tf.placeholder(tf.float32,
@@ -60,7 +64,7 @@ class GANMnistModel(Model):
         self.gen_output = gen.output(self.gen_input)
         self.disc_false_input = self.gen_output
 
-        self.disc_false_output = self.disc(self.disc_false_input)
+        self.disc_false_output = disc.output(self.disc_false_input)
 
         self.disc_true_input = tf.placeholder(tf.float32,
                                               shape=[None, 28, 28, 1],
@@ -68,12 +72,12 @@ class GANMnistModel(Model):
         self.disc_true_output_ref = tf.placeholder(tf.float32,
                                                    shape=[None, 10],
                                                    name="disc_true_output_ref")
-        self.disc_true_output = self.disc(self.disc_true_input)
+        self.disc_true_output = disc.output(self.disc_true_input)
 
-        self.gen_loss = tf.mean(-tf.log(tf.clip_by_value(1-tf.sum(self.disc_false_output,
+        self.gen_loss = tf.reduce_mean(-tf.log(tf.clip_by_value(1-tf.reduce_sum(self.disc_false_output,
                                                                   axis=1),
                                                          htf.eps, 1)))
-        self.disc_false_loss = tf.mean(-tf.log(tf.clip_by_value(tf.sum(self.disc_false_output,
+        self.disc_false_loss = tf.reduce_mean(-tf.log(tf.clip_by_value(tf.reduce_sum(self.disc_false_output,
                                                                        axis=1),
                                                                 htf.eps, 1)))
         self.disc_true_loss = htf.celoss(self.disc_true_output,
@@ -109,11 +113,20 @@ class GANMnistModel(Model):
 
 
 
-        return {"acc_disc" : htf.compute_acc(disc_true_output_ref,
+        return {"acc_disc" : hnf.compute_acc(disc_true_output_ref,
                                              disc_true_output),
                 "fal_disc" : np.mean(np.sum(disc_false_output, axis=1))}
 
 
 
 model = GANMnistModel(name="gan_mnist_model")
-model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
+#model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
+
+with model.default_evaluator() as eval:
+    gan_input = np.random.normal(0, 1, (1, 10))
+
+    gan_output = eval.compute(gan_input)
+
+    plt.figure()
+    plt.imshow(gan_output[0, :, :, 0])
+    plt.show()
