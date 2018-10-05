@@ -79,22 +79,32 @@ class GANMnistModel(Model):
         self.disc_true_loss = htf.celoss(self.disc_true_output,
                                          self.disc_true_output_ref)
 
-        self.loss = htf.celoss(self.output, self.ref_output)
-        self.trainer = clas.trainer(self.loss,
-                                    tf.train.AdamOptimizer(0.0002, 0.5))
+        self.gen_trainer = gen.trainer(self.gen_loss,
+                                       tf.train.AdamOptimizer())
+        self.disc_true_trainer = disc.trainer(self.disc_true_loss,
+                                              tf.train.AdamOptimizer())
+        self.disc_false_trainer = disc.trainer(self.disc_false_loss,
+                                               tf.train.AdamOptimizer())
 
-        self.input_list = [self.input]
+        self.input_list = [self.gen_input]
+        self.output = self.gen_output
 
     def train_op(self, sess, batch, count):
 
-        batch_x, batch_y_ref = batch.train(100)
-        _, batch_y = sess.run((self.trainer, self.output),
-                               feed_dict={self.input:batch_x,
-                                          self.ref_output:batch_y_ref})
+        # Training data
 
-        test_x, test_y_ref = batch.test(1000)
-        test_y = self.output.eval(session=sess,
-                                  feed_dict={self.input:test_x})
+        disc_true_input, disc_true_output_ref = batch.train(100)
+        gen_input = np.random.normal(0, 1, (100, 10))
+
+        # Running training
+
+        _, batch_y = sess.run((self.gen_trainer,
+                               self.disc_true_trainer,
+                               self.disc_false_trainer
+                               self.output),
+                               feed_dict={self.gen_input:gen_input,
+                                          self.disc_true_input:disc_true_input,
+                                          self.disc_true_output_ref:disc_true_output_ref})
 
         return {"acc_test" : htf.compute_acc(test_y, test_y_ref),
                 "acc_train" : htf.compute_acc(batch_y, batch_y_ref)}
