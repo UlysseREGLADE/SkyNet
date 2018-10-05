@@ -98,21 +98,22 @@ class GANMnistModel(Model):
 
         # Running training
 
-        _, batch_y = sess.run((self.gen_trainer,
-                               self.disc_true_trainer,
-                               self.disc_false_trainer
-                               self.output),
-                               feed_dict={self.gen_input:gen_input,
-                                          self.disc_true_input:disc_true_input,
-                                          self.disc_true_output_ref:disc_true_output_ref})
-
-        return {"acc_test" : htf.compute_acc(test_y, test_y_ref),
-                "acc_train" : htf.compute_acc(batch_y, batch_y_ref)}
+        _, _, _, disc_true_output, disc_false_output = sess.run((self.gen_trainer,
+                                                                 self.disc_true_trainer,
+                                                                 self.disc_false_trainer,
+                                                                 self.disc_true_output,
+                                                                 self.disc_false_output),
+                                                                 feed_dict={self.gen_input:gen_input,
+                                                                            self.disc_true_input:disc_true_input,
+                                                                            self.disc_true_output_ref:disc_true_output_ref})
 
 
 
-model = MnistModel(name="mnist_model")
+        return {"acc_disc" : htf.compute_acc(disc_true_output_ref,
+                                             disc_true_output),
+                "fal_disc" : np.mean(np.sum(disc_false_output, axis=1))}
+
+
+
+model = GANMnistModel(name="gan_mnist_model")
 model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
-
-with model.default_evaluator() as eval:
-    eval.compute( np.zeros((1,28,28,1)) )
