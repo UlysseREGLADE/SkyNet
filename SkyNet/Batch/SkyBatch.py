@@ -43,27 +43,64 @@ class SkyBatch(Batch):
         self.train_file_names = file_names[:pivot]
         self.test_file_names = file_names[pivot:]
 
-        self.train_size = len(self.train_file_names)*4
-        self.test_size = len(self.test_file_names)*4
+        self.train_size = len(self.train_file_names)
+        self.test_size = len(self.test_file_names)
         self.input_shape = (32, 32, 3)
         self.output_shape = (2)
 
-        self.test_input_images = np.zeros((self.test_size, 64, 64, 3),
-                                          dtype="int8")
-        self.test_output_images = np.zeros((self.test_size, 64, 64, 1),
-                                           dtype="int8")
+        self.test_images = np.zeros((self.test_size, 32, 32, 3), dtype="int8")
+        self.test_labels = np.zeros((self.test_size, 2), dtype="int8")
 
+        print("Loading test data base...")
         for i in range(len(self.test_file_names)):
             file_name = self.test_file_names[i]
             path = "SkyDataSet/" + file_name + ".jpg"
             image = misc.imread(path)
             height, width, _ = image.shape
-            y_top = np.random.randint(height-64)
-            x_left = np.random.randint(width-64)
-            self.test_input_images[i]=image[y_top:y_top+64,x_left:x_left+64,:]
+            y_top = np.random.randint(height-32)
+            x_left = np.random.randint(width-32)
+            if(len(image.shape) == 3):
+                self.test_images[i]=image[y_top:y_top+32,x_left:x_left+32,:]
+            else:
+                self.test_images[i,:,:,0]=image[y_top:y_top+32,x_left:x_left+32]
+                self.test_images[i,:,:,1]=image[y_top:y_top+32,x_left:x_left+32]
+                self.test_images[i,:,:,2]=image[y_top:y_top+32,x_left:x_left+32]
+            path = "SkyDataSet/" + file_name + "-skymask.png"
+            image = misc.imread(path)
+            self.test_labels[i, 0] = image[y_top+16,x_left+16]
+        self.test_labels[:, 1] = 1 - self.test_labels[:, 0]
 
         # Now, we make random undeterministic again
         np.random.seed(int(time.time()))
+
+        self.train_images = np.zeros((self.train_size, 32, 32, 3), dtype="int8")
+        self.train_labels = np.zeros((self.train_size, 2), dtype="int8")
+
+        print("Calling reload_train for the first time:")
+        self.reload_train()
+
+    def reload_train(self):
+
+        np.random.shuffle(self.train_file_names)
+
+        print("Reloading train data base...")
+        for i in range(len(self.train_file_names)):
+            file_name = self.train_file_names[i]
+            path = "SkyDataSet/" + file_name + ".jpg"
+            image = misc.imread(path)
+            height, width = image.shape[0],image.shape[1]
+            y_top = np.random.randint(height-32)
+            x_left = np.random.randint(width-32)
+            if(len(image.shape) == 3):
+                self.train_images[i]=image[y_top:y_top+32,x_left:x_left+32,:]
+            else:
+                self.train_images[i,:,:,0]=image[y_top:y_top+32,x_left:x_left+32]
+                self.train_images[i,:,:,1]=image[y_top:y_top+32,x_left:x_left+32]
+                self.train_images[i,:,:,2]=image[y_top:y_top+32,x_left:x_left+32]
+            path = "SkyDataSet/" + file_name + "-skymask.png"
+            image = misc.imread(path)
+            self.train_labels[i, 0] = image[y_top+16,x_left+16]
+        self.train_labels[:, 1] = 1 - self.train_labels[:, 0]
 
     def train_op(self, size):
 
@@ -71,15 +108,13 @@ class SkyBatch(Batch):
 
             start = self.count%self.train_size
             end = start + size
-            images = self.train_images[self.rd_training[start:end]]
-            labels = self.train_labels[self.rd_training[start:end]]
+            images = self.train_images[start:end]
+            labels = self.train_labels[start:end]
 
         else:
-
-            self.rd_training = np.arange(50000)
-            np.random.shuffle(self.rd_training)
-            images = self.train_images[self.rd_training[:size]]
-            labels = self.train_labels[self.rd_training[:size]]
+            self.reload_train()
+            images = self.train_images[:size]
+            labels = self.train_labels[:size]
 
         return images, labels
 
@@ -96,3 +131,11 @@ class SkyBatch(Batch):
 if(__name__ == "__main__"):
 
     batch = SkyBatch()
+
+    images, labels = batch.train(size=100)
+    print(images.shape)
+    print(labels.shape)
+
+    images, labels = batch.test(size=100)
+    print(images.shape)
+    print(labels.shape)
