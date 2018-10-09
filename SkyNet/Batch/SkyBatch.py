@@ -67,8 +67,11 @@ class SkyBatch(Batch):
                 self.test_images[i,:,:,2]=image[y_top:y_top+32,x_left:x_left+32]
             path = "SkyDataSet/" + file_name + "-skymask.png"
             image = misc.imread(path)
-            self.test_labels[i, 0] = image[y_top+16,x_left+16]
+            self.test_labels[i, 0] = image[y_top+16,x_left+16]//255
         self.test_labels[:, 1] = 1 - self.test_labels[:, 0]
+
+        print("Testing size: " + str(self.test_size))
+        print("Number of positives: " + str(np.sum(self.test_labels[:, 0])))
 
         # Now, we make random undeterministic again
         np.random.seed(int(time.time()))
@@ -99,7 +102,7 @@ class SkyBatch(Batch):
                 self.train_images[i,:,:,2]=image[y_top:y_top+32,x_left:x_left+32]
             path = "SkyDataSet/" + file_name + "-skymask.png"
             image = misc.imread(path)
-            self.train_labels[i, 0] = image[y_top+16,x_left+16]
+            self.train_labels[i, 0] = image[y_top+16,x_left+16]//255
         self.train_labels[:, 1] = 1 - self.train_labels[:, 0]
 
     def train_op(self, size):
@@ -108,13 +111,13 @@ class SkyBatch(Batch):
 
             start = self.count%self.train_size
             end = start + size
-            images = self.train_images[start:end]
-            labels = self.train_labels[start:end]
+            images = self.train_images[start:end]*1.0/255
+            labels = self.train_labels[start:end]*1.0
 
         else:
             self.reload_train()
-            images = self.train_images[:size]
-            labels = self.train_labels[:size]
+            images = self.train_images[:size]*1.0/255
+            labels = self.train_labels[:size]*1.0
 
         return images, labels
 
@@ -125,7 +128,7 @@ class SkyBatch(Batch):
         np.random.shuffle(index)
         index = index[:size]
 
-        return self.test_images[index], self.test_labels[index]
+        return self.test_images[index]*1.0/255, self.test_labels[index]*1.0
 
 
 if(__name__ == "__main__"):
