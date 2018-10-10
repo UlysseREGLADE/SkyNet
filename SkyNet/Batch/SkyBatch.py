@@ -48,10 +48,10 @@ class SkyBatch(Batch):
 
         self.train_size = COR*(len(self.train_file_names)//COR)
         self.test_size = len(self.test_file_names)
-        self.input_shape = (SIZE, SIZE, 3)
+        self.input_shape = (SIZE, SIZE, 5)
         self.output_shape = (2)
 
-        self.test_images = np.zeros((self.test_size, SIZE, SIZE, 3))
+        self.test_images = np.zeros((self.test_size, SIZE, SIZE, 5))
         self.test_labels = np.zeros((self.test_size, 2), dtype="uint8")
 
         print("Loading test data base...")
@@ -64,10 +64,17 @@ class SkyBatch(Batch):
             y_top = np.random.randint(height-1)
             x_left = np.random.randint(width-1)
 
+            grad_x = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
+            grad_x[:] = np.linspace(0, 1, width+SIZE-1+SIZE%2)
+            grad_y = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
+            grad_y.T[:] = np.linspace(0, 1, height+SIZE-1+SIZE%2)
+
             if(len(image.shape) == 3):
 
                 image = np.pad(image, [[SIZE//2-1+SIZE%2,SIZE//2], [SIZE//2-1+SIZE%2,SIZE//2], [0,0]], 'edge')
-                self.test_images[i]=image[y_top:y_top+SIZE,x_left:x_left+SIZE,:]
+                self.test_images[i,:,:,0:3]=image[y_top:y_top+SIZE,x_left:x_left+SIZE,:]
+                self.test_images[i,:,:,3]=grad_x[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                self.test_images[i,:,:,4]=grad_y[y_top:y_top+SIZE,x_left:x_left+SIZE]
 
             else:
 
@@ -75,6 +82,8 @@ class SkyBatch(Batch):
                 self.test_images[i,:,:,0]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
                 self.test_images[i,:,:,1]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
                 self.test_images[i,:,:,2]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                self.test_images[i,:,:,3]=grad_x[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                self.test_images[i,:,:,4]=grad_y[y_top:y_top+SIZE,x_left:x_left+SIZE]
 
             path = "SkyDataSet/" + file_name + "-skymask.png"
             image = misc.imread(path)
@@ -89,11 +98,11 @@ class SkyBatch(Batch):
         # Now, we make random undeterministic again
         np.random.seed(int(time.time()))
 
-        self.train_images = np.zeros((self.train_size, SIZE, SIZE, 3))
+        self.train_images = np.zeros((self.train_size, SIZE, SIZE, 5))
         self.train_labels = np.zeros((self.train_size, 2), dtype="uint8")
 
         print("Calling reload_train for the first time...")
-        self.reload_train()
+        # self.reload_train()
 
     def reload_train(self):
 
@@ -109,6 +118,11 @@ class SkyBatch(Batch):
             lab_image = misc.imread(path)
             lab_image = np.pad(lab_image, [[SIZE//2-1+SIZE%2, SIZE//2], [SIZE//2-1+SIZE%2, SIZE//2]], 'edge')
 
+            grad_x = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
+            grad_x[:] = np.linspace(0, 1, width+SIZE-1+SIZE%2)
+            grad_y = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
+            grad_y.T[:] = np.linspace(0, 1, height+SIZE-1+SIZE%2)
+
             for j in range(COR):
 
                 y_top = np.random.randint(height-1)
@@ -118,15 +132,19 @@ class SkyBatch(Batch):
 
                     if(j==0):
                         image = np.pad(image, [[SIZE//2-1+SIZE%2,SIZE//2], [SIZE//2-1+SIZE%2,SIZE//2], [0,0]], 'edge')
-                    self.train_images[COR*i+j]=image[y_top:y_top+SIZE,x_left:x_left+SIZE,:]
+                    self.train_images[COR*i+j,:,:,0:3]=image[y_top:y_top+SIZE,x_left:x_left+SIZE,:]
+                    self.train_images[COR*i+j,:,:,3]=grad_x[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                    self.train_images[COR*i+j,:,:,4]=grad_y[y_top:y_top+SIZE,x_left:x_left+SIZE]
 
                 else:
 
                     if(j==0):
                         image = np.pad(image, [[SIZE//2-1+SIZE%2,SIZE//2], [SIZE//2-1+SIZE%2,SIZE//2]], 'edge')
                     self.train_images[COR*i+j,:,:,0]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
-                    self.train_images[COR*i+j,:,:,2]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
                     self.train_images[COR*i+j,:,:,1]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                    self.train_images[COR*i+j,:,:,2]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                    self.train_images[COR*i+j,:,:,3]=grad_x[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                    self.train_images[COR*i+j,:,:,4]=grad_y[y_top:y_top+SIZE,x_left:x_left+SIZE]
 
                 self.train_labels[COR*i+j, 0] = lab_image[y_top+SIZE//2,x_left+SIZE//2]//255
 
@@ -182,7 +200,15 @@ if(__name__ == "__main__"):
     print(labels)
 
     plt.figure()
-    plt.imshow(images[0])
+    plt.imshow(images[0,:,:,0:3])
+    plt.show(False)
+
+    plt.figure()
+    plt.imshow(images[0,:,:,3])
+    plt.show(False)
+
+    plt.figure()
+    plt.imshow(images[0,:,:,4])
     plt.show(False)
 
     images, labels = batch.test(size=10)
@@ -192,5 +218,5 @@ if(__name__ == "__main__"):
     print(labels)
 
     plt.figure()
-    plt.imshow(images[0])
+    plt.imshow(images[0,:,:,0:3])
     plt.show()

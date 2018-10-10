@@ -37,10 +37,10 @@ class SkyModel(Model):
         clas.set_net()
 
         self.training_input = tf.placeholder(tf.float32,
-                                             shape=[None, 32, 32, 3],
+                                             shape=[None, 32, 32, 5],
                                              name="training_input")
         self.input = tf.placeholder(tf.float32,
-                                    shape=[None, None, 3])
+                                    shape=[None, None, 5])
 
         self.reshaped_input = tf.expand_dims(self.input, 0)
 
@@ -81,7 +81,22 @@ model = SkyModel(name="sky_model")
 
 with model.default_evaluator() as eval:
     image = batch.test_image()
-    output = eval.compute(image*1.0/255)[0]
+
+    height, width, _ = image.shape
+    SIZE=32
+
+    reshaped_image = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2, 5))
+
+    grad_x = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
+    grad_x[:] = np.linspace(0, 1, width+SIZE-1+SIZE%2)
+    grad_y = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
+    grad_y.T[:] = np.linspace(0, 1, height+SIZE-1+SIZE%2)
+
+    reshaped_image[:,:,0:3] = np.pad(image, [[SIZE//2-1+SIZE%2, SIZE//2], [SIZE//2-1+SIZE%2, SIZE//2], [0,0]], 'edge')/255
+    reshaped_image[:,:,3] = grad_x
+    reshaped_image[:,:,4] = grad_y
+
+    output = eval.compute(reshaped_image)[0]
 
     plt.figure()
     plt.imshow(image)
