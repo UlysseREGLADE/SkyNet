@@ -81,12 +81,12 @@ model = SkyModel(name="sky_model")
 
 with model.default_evaluator() as eval:
     image = batch.test_image()
-    output = eval.compute(image*1.0/255-0.5)[0]
+    output = eval.compute(image*1.0/255)[0]
 
     plt.figure()
     plt.imshow(image)
     plt.show(False)
 
     plt.figure()
-    plt.imshow(output[:,:,1])
+    plt.imshow(output[:,:,0])
     plt.show()
