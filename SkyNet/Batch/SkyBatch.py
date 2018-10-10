@@ -9,7 +9,8 @@ import os
 from scipy import misc
 import time
 
-cor = 10
+COR = 10
+SIZE = 32
 
 class SkyBatch(Batch):
 
@@ -45,34 +46,41 @@ class SkyBatch(Batch):
         self.train_file_names = file_names[:pivot]
         self.test_file_names = file_names[pivot:]
 
-        self.train_size = cor*(len(self.train_file_names)//cor)
+        self.train_size = COR*(len(self.train_file_names)//COR)
         self.test_size = len(self.test_file_names)
-        self.input_shape = (32, 32, 3)
+        self.input_shape = (SIZE, SIZE, 3)
         self.output_shape = (2)
 
-        self.test_images = np.zeros((self.test_size, 32, 32, 3), dtype="uint8")
+        self.test_images = np.zeros((self.test_size, SIZE, SIZE, 3))
         self.test_labels = np.zeros((self.test_size, 2), dtype="uint8")
 
         print("Loading test data base...")
         for i in range(len(self.test_file_names)):
+
             file_name = self.test_file_names[i]
             path = "SkyDataSet/" + file_name + ".jpg"
-            image = misc.imread(path)
+            image = misc.imread(path)/255
             height, width, _ = image.shape
             y_top = np.random.randint(height-1)
             x_left = np.random.randint(width-1)
+
             if(len(image.shape) == 3):
-                image = np.pad(image, [[15,16], [15,16], [0,0]], 'edge')
-                self.test_images[i]=image[y_top:y_top+32,x_left:x_left+32,:]
+
+                image = np.pad(image, [[SIZE//2-1+SIZE%2,SIZE//2], [SIZE//2-1+SIZE%2,SIZE//2], [0,0]], 'edge')
+                self.test_images[i]=image[y_top:y_top+SIZE,x_left:x_left+SIZE,:]
+
             else:
-                image = np.pad(image, [[15, 16], [15, 16]], 'edge')
-                self.test_images[i,:,:,0]=image[y_top:y_top+32,x_left:x_left+32]
-                self.test_images[i,:,:,1]=image[y_top:y_top+32,x_left:x_left+32]
-                self.test_images[i,:,:,2]=image[y_top:y_top+32,x_left:x_left+32]
+
+                image = np.pad(image, [[SIZE//2-1+SIZE%2, SIZE//2], [SIZE//2-1+SIZE%2, SIZE//2]], 'edge')
+                self.test_images[i,:,:,0]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                self.test_images[i,:,:,1]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                self.test_images[i,:,:,2]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
+
             path = "SkyDataSet/" + file_name + "-skymask.png"
             image = misc.imread(path)
-            image = np.pad(image, [[15, 16], [15, 16]], 'edge')
-            self.test_labels[i, 0] = image[y_top+16,x_left+16]//255
+            image = np.pad(image, [[SIZE//2-1+SIZE%2, SIZE//2], [SIZE//2-1+SIZE%2, SIZE//2]], 'edge')
+            self.test_labels[i, 0] = image[y_top+SIZE//2,x_left+SIZE//2]//255
+
         self.test_labels[:, 1] = 1 - self.test_labels[:, 0]
 
         print("Testing size: " + str(self.test_size))
@@ -81,7 +89,7 @@ class SkyBatch(Batch):
         # Now, we make random undeterministic again
         np.random.seed(int(time.time()))
 
-        self.train_images = np.zeros((self.train_size, 32, 32, 3), dtype="uint8")
+        self.train_images = np.zeros((self.train_size, SIZE, SIZE, 3))
         self.train_labels = np.zeros((self.train_size, 2), dtype="uint8")
 
         print("Calling reload_train for the first time...")
@@ -91,17 +99,17 @@ class SkyBatch(Batch):
 
         np.random.shuffle(self.train_file_names)
 
-        for i in range(len(self.train_file_names)//cor):
+        for i in range(len(self.train_file_names)//COR):
 
             file_name = self.train_file_names[i]
             path = "SkyDataSet/" + file_name + ".jpg"
-            image = misc.imread(path)
+            image = misc.imread(path)/255
             height, width = image.shape[0], image.shape[1]
             path = "SkyDataSet/" + file_name + "-skymask.png"
             lab_image = misc.imread(path)
-            lab_image = np.pad(lab_image, [[15, 16], [15, 16]], 'edge')
+            lab_image = np.pad(lab_image, [[SIZE//2-1+SIZE%2, SIZE//2], [SIZE//2-1+SIZE%2, SIZE//2]], 'edge')
 
-            for j in range(cor):
+            for j in range(COR):
 
                 y_top = np.random.randint(height-1)
                 x_left = np.random.randint(width-1)
@@ -109,18 +117,18 @@ class SkyBatch(Batch):
                 if(len(image.shape) == 3):
 
                     if(j==0):
-                        image = np.pad(image, [[15,16], [15,16], [0,0]], 'edge')
-                    self.train_images[cor*i+j]=image[y_top:y_top+32,x_left:x_left+32,:]
+                        image = np.pad(image, [[SIZE//2-1+SIZE%2,SIZE//2], [SIZE//2-1+SIZE%2,SIZE//2], [0,0]], 'edge')
+                    self.train_images[COR*i+j]=image[y_top:y_top+SIZE,x_left:x_left+SIZE,:]
 
                 else:
 
                     if(j==0):
-                        image = np.pad(image, [[15,16], [15,16]], 'edge')
-                    self.train_images[cor*i+j,:,:,0]=image[y_top:y_top+32,x_left:x_left+32]
-                    self.train_images[cor*i+j,:,:,1]=image[y_top:y_top+32,x_left:x_left+32]
-                    self.train_images[cor*i+j,:,:,2]=image[y_top:y_top+32,x_left:x_left+32]
+                        image = np.pad(image, [[SIZE//2-1+SIZE%2,SIZE//2], [SIZE//2-1+SIZE%2,SIZE//2]], 'edge')
+                    self.train_images[COR*i+j,:,:,0]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                    self.train_images[COR*i+j,:,:,2]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                    self.train_images[COR*i+j,:,:,1]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
 
-                self.train_labels[cor*i+j, 0] = lab_image[y_top+16,x_left+16]//255
+                self.train_labels[COR*i+j, 0] = lab_image[y_top+SIZE//2,x_left+SIZE//2]//255
 
         self.train_labels[:, 1] = 1 - self.train_labels[:, 0]
 
@@ -133,12 +141,12 @@ class SkyBatch(Batch):
 
             start = self.count%self.train_size
             end = start + size
-            images = self.train_images[self.rd_training[start:end]]*1.0/255
+            images = self.train_images[self.rd_training[start:end]]
             labels = self.train_labels[self.rd_training[start:end]]*1.0
 
         else:
             self.reload_train()
-            images = self.train_images[self.rd_training[:size]]*1.0/255
+            images = self.train_images[self.rd_training[:size]]
             labels = self.train_labels[self.rd_training[:size]]*1.0
 
         return images, labels
@@ -150,7 +158,7 @@ class SkyBatch(Batch):
         np.random.shuffle(index)
         index = index[:size]
 
-        return self.test_images[index]*1.0/255, self.test_labels[index]*1.0
+        return self.test_images[index], self.test_labels[index]*1.0
 
     def test_image(self):
 
