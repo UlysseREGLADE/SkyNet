@@ -48,7 +48,7 @@ class SkyBatch(Batch):
         self.input_shape = (32, 32, 3)
         self.output_shape = (2)
 
-        self.test_images = np.zeros((self.test_size, 32, 32, 3), dtype="int8")
+        self.test_images = np.zeros((self.test_size, 32, 32, 3), dtype="uint8")
         self.test_labels = np.zeros((self.test_size, 2), dtype="int8")
 
         print("Loading test data base...")
@@ -76,11 +76,11 @@ class SkyBatch(Batch):
         # Now, we make random undeterministic again
         np.random.seed(int(time.time()))
 
-        self.train_images = np.zeros((self.train_size, 32, 32, 3), dtype="int8")
+        self.train_images = np.zeros((self.train_size, 32, 32, 3), dtype="uint8")
         self.train_labels = np.zeros((self.train_size, 2), dtype="int8")
 
         print("Calling reload_train for the first time:")
-        self.reload_train()
+        # self.reload_train()
 
     def reload_train(self):
 
@@ -130,15 +130,37 @@ class SkyBatch(Batch):
 
         return self.test_images[index]*1.0/255, self.test_labels[index]*1.0
 
+    def test_image(self):
+
+        index = np.random.randint(self.test_size)
+        file_name = self.test_file_names[index]
+        path = "SkyDataSet/" + file_name + ".jpg"
+        image = misc.imread(path)
+
+        return image
 
 if(__name__ == "__main__"):
 
+    import matplotlib.pyplot as plt
+
     batch = SkyBatch()
 
-    images, labels = batch.train(size=100)
+    images, labels = batch.train(size=10)
     print(images.shape)
     print(labels.shape)
+    print(np.min(images), np.max(images))
+    print(labels)
 
-    images, labels = batch.test(size=100)
+    plt.figure()
+    plt.imshow(images[0])
+    plt.show(False)
+
+    images, labels = batch.test(size=10)
     print(images.shape)
     print(labels.shape)
+    print(np.min(images), np.max(images))
+    print(labels)
+
+    plt.figure()
+    plt.imshow(images[0])
+    plt.show()

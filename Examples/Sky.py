@@ -3,6 +3,7 @@ import sys
 import numpy as np
 sys.path.append('../')
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 from SkyNet.Net import Net
 from SkyNet.Model import Model
@@ -15,17 +16,16 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 class Classifier(Net):
 
     def net(self, l_l):
-        #Construction du classifieur
-        with tf.variable_scope("fcon1_layer"):
-            l_l = self.fcon(l_l, 256)
+        with tf.variable_scope("frac_fcon_1"):
+            l_l = self.conv(l_l, 256, kernel=32, padding="VALID")
             l_l = tf.nn.relu(l_l)
 
-        with tf.variable_scope("fcon2_layer"):
-            l_l = self.fcon(l_l, 256)
+        with tf.variable_scope("frac_fcon_2"):
+            l_l = self.conv(l_l, 256, kernel=1, padding="VALID")
             l_l = tf.nn.relu(l_l)
 
-        with tf.variable_scope("fcon3_layer"):
-            l_l = self.fcon(l_l, 2)
+        with tf.variable_scope("frac_fcon_3"):
+            l_l = self.conv(l_l, 2, kernel=1, padding="VALID")
             return tf.nn.softmax(l_l)
 
 
@@ -36,17 +36,24 @@ class SkyModel(Model):
         clas = Classifier('clas', self.is_training)
         clas.set_net()
 
+        self.training_input = tf.placeholder(tf.float32,
+                                             shape=[None, 32, 32, 3],
+                                             name="training_input")
         self.input = tf.placeholder(tf.float32,
-                                    shape=[None, 32, 32, 3],
-                                    name="pi_input")
+                                    shape=[None, None, 3])
 
-        self.output = clas.output(self.input)
+        self.reshaped_input = tf.expand_dims(self.input, 0)
+
+        self.training_output = clas.output(self.training_input)
+
+        self.output = clas.output(self.reshaped_input)
+        self.training_output = tf.reshape(self.training_output, [-1, 2])
 
         self.ref_output = tf.placeholder(tf.float32,
                                          shape=[None, 2],
                                          name="pi_ref_output")
 
-        self.loss = htf.celoss(self.output, self.ref_output)
+        self.loss = htf.celoss(self.training_output, self.ref_output)
         self.trainer = clas.trainer(self.loss,
                                     tf.train.AdamOptimizer(0.0002, 0.5))
 
@@ -55,21 +62,31 @@ class SkyModel(Model):
     def train_op(self, sess, batch, count):
 
         batch_x, batch_y_ref = batch.train(100)
-        _, batch_y = sess.run((self.trainer, self.output),
-                               feed_dict={self.input:batch_x,
+        _, batch_y = sess.run((self.trainer, self.training_output),
+                               feed_dict={self.training_input:batch_x,
                                           self.ref_output:batch_y_ref})
 
         test_x, test_y_ref = batch.test(1000)
-        test_y = self.output.eval(session=sess,
-                                  feed_dict={self.input:test_x})
+        test_y = self.training_output.eval(session=sess,
+                                  feed_dict={self.training_input:test_x})
 
         return {"acc_test" : hnf.compute_acc(test_y, test_y_ref),
                 "acc_train" : hnf.compute_acc(batch_y, batch_y_ref)}
 
 
 
+batch = SkyBatch()
 model = SkyModel(name="sky_model")
-model.train(batch=SkyBatch(), epochs=10, display=10, save=10)
+# model.train(batch=batch, epochs=10, display=10, save=10)
 
 with model.default_evaluator() as eval:
-    eval.compute( np.zeros((1,32,32,3)) )
+    image = batch.test_image()
+    output = eval.compute(image*1.0/255-0.5)[0]
+
+    plt.figure()
+    plt.imshow(image)
+    plt.show(False)
+
+    plt.figure()
+    plt.imshow(output[:,:,1])
+    plt.show()
