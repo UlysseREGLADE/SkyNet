@@ -9,7 +9,7 @@ from SkyNet.Net import Net
 from SkyNet.Model import Model
 import SkyNet.HandyTensorFunctions as htf
 import SkyNet.HandyNumpyFunctions as hnf
-from SkyNet.Batch.SkyBatch import SkyBatch
+from SkyNet.Batch.SkyBatch import SkyBatch, format_image
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -80,28 +80,19 @@ model = SkyModel(name="sky_model")
 # model.train(batch=batch, epochs=10, display=10, save=10)
 
 with model.default_evaluator() as eval:
-    image = batch.test_image()
 
-    height, width, _ = image.shape
-    SIZE=32
+    image, lab_image = batch.test_image()
 
-    reshaped_image = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2, 5))
-
-    grad_x = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
-    grad_x[:] = np.linspace(0, 1, width+SIZE-1+SIZE%2)
-    grad_y = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
-    grad_y.T[:] = np.linspace(0, 1, height+SIZE-1+SIZE%2)
-
-    reshaped_image[:,:,0:3] = np.pad(image, [[SIZE//2-1+SIZE%2, SIZE//2], [SIZE//2-1+SIZE%2, SIZE//2], [0,0]], 'edge')/255
-    reshaped_image[:,:,3] = grad_x
-    reshaped_image[:,:,4] = grad_y
-
-    output = eval.compute(reshaped_image)[0]
+    output = eval.compute(format_image(image))[0]
 
     plt.figure()
     plt.imshow(image)
     plt.show(False)
 
     plt.figure()
-    plt.imshow(output[:,:,0])
+    plt.imshow(output[:,:,0]>0.5)
+    plt.show(False)
+
+    plt.figure()
+    plt.imshow(lab_image)
     plt.show()

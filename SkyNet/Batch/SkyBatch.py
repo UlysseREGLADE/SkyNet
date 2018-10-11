@@ -12,6 +12,29 @@ import time
 COR = 10
 SIZE = 32
 
+def format_image(image):
+
+    height, width = image.shape[0], image.shape[1]
+
+    reshaped_image = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2, 5))
+
+    grad_x = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
+    grad_x[:] = np.linspace(0, 1, width+SIZE-1+SIZE%2)
+    grad_y = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
+    grad_y.T[:] = np.linspace(0, 1, height+SIZE-1+SIZE%2)
+
+    if(len(image.shape)==3):
+        reshaped_image[:,:,0:3] = np.pad(image, [[SIZE//2-1+SIZE%2, SIZE//2], [SIZE//2-1+SIZE%2, SIZE//2], [0,0]], 'edge')/255
+    else:
+        reshaped_image[:,:,0] = np.pad(image, [[SIZE//2-1+SIZE%2, SIZE//2], [SIZE//2-1+SIZE%2, SIZE//2]], 'edge')/255
+        reshaped_image[:,:,1] = reshaped_image[:,:,0]
+        reshaped_image[:,:,2] = reshaped_image[:,:,0]
+
+    reshaped_image[:,:,3] = grad_x
+    reshaped_image[:,:,4] = grad_y
+
+    return reshaped_image
+
 class SkyBatch(Batch):
 
     def load(self):
@@ -41,6 +64,8 @@ class SkyBatch(Batch):
         # Get a undeterministic instance of random for partitionning data base
         np.random.seed(167643576)
         np.random.shuffle(file_names)
+        np.random.seed(int(time.time()))
+
         test_ratio = 0.2
         pivot = int(0.8*len(file_names))
         self.train_file_names = file_names[:pivot]
@@ -54,36 +79,23 @@ class SkyBatch(Batch):
         self.test_images = np.zeros((self.test_size, SIZE, SIZE, 5))
         self.test_labels = np.zeros((self.test_size, 2), dtype="uint8")
 
-        print("Loading test data base...")
+        self.train_images = np.zeros((self.train_size, SIZE, SIZE, 5))
+        self.train_labels = np.zeros((self.train_size, 2), dtype="uint8")
+
+    def load_test(self):
+
         for i in range(len(self.test_file_names)):
 
             file_name = self.test_file_names[i]
             path = "SkyDataSet/" + file_name + ".jpg"
-            image = misc.imread(path)/255
+            image = misc.imread(path)
             height, width, _ = image.shape
             y_top = np.random.randint(height-1)
             x_left = np.random.randint(width-1)
 
-            grad_x = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
-            grad_x[:] = np.linspace(0, 1, width+SIZE-1+SIZE%2)
-            grad_y = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
-            grad_y.T[:] = np.linspace(0, 1, height+SIZE-1+SIZE%2)
+            formated_image = format_image(image)
 
-            if(len(image.shape) == 3):
-
-                image = np.pad(image, [[SIZE//2-1+SIZE%2,SIZE//2], [SIZE//2-1+SIZE%2,SIZE//2], [0,0]], 'edge')
-                self.test_images[i,:,:,0:3]=image[y_top:y_top+SIZE,x_left:x_left+SIZE,:]
-                self.test_images[i,:,:,3]=grad_x[y_top:y_top+SIZE,x_left:x_left+SIZE]
-                self.test_images[i,:,:,4]=grad_y[y_top:y_top+SIZE,x_left:x_left+SIZE]
-
-            else:
-
-                image = np.pad(image, [[SIZE//2-1+SIZE%2, SIZE//2], [SIZE//2-1+SIZE%2, SIZE//2]], 'edge')
-                self.test_images[i,:,:,0]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
-                self.test_images[i,:,:,1]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
-                self.test_images[i,:,:,2]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
-                self.test_images[i,:,:,3]=grad_x[y_top:y_top+SIZE,x_left:x_left+SIZE]
-                self.test_images[i,:,:,4]=grad_y[y_top:y_top+SIZE,x_left:x_left+SIZE]
+            self.test_images[i] = formated_image[y_top:y_top+SIZE,x_left:x_left+SIZE,:]
 
             path = "SkyDataSet/" + file_name + "-skymask.png"
             image = misc.imread(path)
@@ -95,15 +107,6 @@ class SkyBatch(Batch):
         print("Testing size: " + str(self.test_size))
         print("Number of positives: " + str(np.sum(self.test_labels[:, 0])))
 
-        # Now, we make random undeterministic again
-        np.random.seed(int(time.time()))
-
-        self.train_images = np.zeros((self.train_size, SIZE, SIZE, 5))
-        self.train_labels = np.zeros((self.train_size, 2), dtype="uint8")
-
-        print("Calling reload_train for the first time...")
-        # self.reload_train()
-
     def reload_train(self):
 
         np.random.shuffle(self.train_file_names)
@@ -112,39 +115,20 @@ class SkyBatch(Batch):
 
             file_name = self.train_file_names[i]
             path = "SkyDataSet/" + file_name + ".jpg"
-            image = misc.imread(path)/255
+            image = misc.imread(path)
             height, width = image.shape[0], image.shape[1]
             path = "SkyDataSet/" + file_name + "-skymask.png"
             lab_image = misc.imread(path)
             lab_image = np.pad(lab_image, [[SIZE//2-1+SIZE%2, SIZE//2], [SIZE//2-1+SIZE%2, SIZE//2]], 'edge')
 
-            grad_x = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
-            grad_x[:] = np.linspace(0, 1, width+SIZE-1+SIZE%2)
-            grad_y = np.zeros((height+SIZE-1+SIZE%2, width+SIZE-1+SIZE%2))
-            grad_y.T[:] = np.linspace(0, 1, height+SIZE-1+SIZE%2)
+            formated_image = format_image(image)
 
             for j in range(COR):
 
                 y_top = np.random.randint(height-1)
                 x_left = np.random.randint(width-1)
 
-                if(len(image.shape) == 3):
-
-                    if(j==0):
-                        image = np.pad(image, [[SIZE//2-1+SIZE%2,SIZE//2], [SIZE//2-1+SIZE%2,SIZE//2], [0,0]], 'edge')
-                    self.train_images[COR*i+j,:,:,0:3]=image[y_top:y_top+SIZE,x_left:x_left+SIZE,:]
-                    self.train_images[COR*i+j,:,:,3]=grad_x[y_top:y_top+SIZE,x_left:x_left+SIZE]
-                    self.train_images[COR*i+j,:,:,4]=grad_y[y_top:y_top+SIZE,x_left:x_left+SIZE]
-
-                else:
-
-                    if(j==0):
-                        image = np.pad(image, [[SIZE//2-1+SIZE%2,SIZE//2], [SIZE//2-1+SIZE%2,SIZE//2]], 'edge')
-                    self.train_images[COR*i+j,:,:,0]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
-                    self.train_images[COR*i+j,:,:,1]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
-                    self.train_images[COR*i+j,:,:,2]=image[y_top:y_top+SIZE,x_left:x_left+SIZE]
-                    self.train_images[COR*i+j,:,:,3]=grad_x[y_top:y_top+SIZE,x_left:x_left+SIZE]
-                    self.train_images[COR*i+j,:,:,4]=grad_y[y_top:y_top+SIZE,x_left:x_left+SIZE]
+                self.train_images[COR*i+j] = formated_image[y_top:y_top+SIZE,x_left:x_left+SIZE,:]
 
                 self.train_labels[COR*i+j, 0] = lab_image[y_top+SIZE//2,x_left+SIZE//2]//255
 
@@ -154,6 +138,11 @@ class SkyBatch(Batch):
         np.random.shuffle(self.rd_training)
 
     def train_op(self, size):
+
+        if(not hasattr(self, 'train_flag')):
+            self.train_flag = True
+            print("Calling reload_train for the first time...")
+            self.reload_train()
 
         if(size + (self.count%self.train_size) < self.train_size):
 
@@ -172,6 +161,11 @@ class SkyBatch(Batch):
 
     def test_op(self, size=0):
 
+        if(not hasattr(self, 'test_flag')):
+            self.train_flag = True
+            print("Loading test data...")
+            self.load_test()
+
         index = np.arange(self.test_size)
         np.random.shuffle(index)
         index = index[:size]
@@ -180,12 +174,18 @@ class SkyBatch(Batch):
 
     def test_image(self):
 
-        index = np.random.randint(self.test_size)
-        file_name = self.test_file_names[index]
+        if(not hasattr(self, 'test_image_index')):
+            self.test_image_index = 0
+        else:
+            self.test_image_index = (self.test_image_index+1)%self.test_size
+
+        file_name = self.test_file_names[self.test_image_index]
         path = "SkyDataSet/" + file_name + ".jpg"
         image = misc.imread(path)
+        path = "SkyDataSet/" + file_name + "-skymask.png"
+        lab_image = misc.imread(path)
 
-        return image
+        return image, lab_image
 
 if(__name__ == "__main__"):
 
