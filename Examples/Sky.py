@@ -81,10 +81,18 @@ model = SkyModel(name="sky_model")
 
 with model.default_evaluator() as eval:
 
-    image, lab_image = batch.test_image()
 
-    output = eval.compute(format_image(image))[0]
+    acc_table = np.zeros((batch.test_size))
 
+    for i in range(batch.test_size):
+        image, lab_image = batch.test_image()
+        output = eval.compute(format_image(image))[0]
+        acc = 1-np.mean(np.logical_xor(output[:,:,0]>0.5, lab_image>0.5))
+        acc_table[i] = acc
+        print(acc)
+
+
+    print(np.mean(acc_table))
     plt.figure()
     plt.imshow(image)
     plt.show(False)
