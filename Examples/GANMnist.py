@@ -17,15 +17,15 @@ class Discriminer(Net):
 
     def net(self, l_l):
         #Construction du classifieur
-        with tf.variable_scope("fcon1_layer"):
+        with tf.variable_scope("fcon1_layer1"):
             l_l = self.fcon(l_l, 128)
             l_l = tf.nn.relu(l_l)
 
-        with tf.variable_scope("fcon2_layer"):
+        with tf.variable_scope("fcon2_layer1"):
             l_l = self.fcon(l_l, 64)
             l_l = tf.nn.relu(l_l)
 
-        with tf.variable_scope("fcon3_layer"):
+        with tf.variable_scope("fcon3_layer1"):
             l_l = self.fcon(l_l, 11)
             l_l = tf.nn.softmax(l_l)
             return l_l[:, :10], l_l[:, 10]
@@ -52,10 +52,10 @@ class GANMnistModel(Model):
 
     def reset_op(self, **kwargs):
 
-        disc = Discriminer('disc', self.is_training)
-        disc.set_net()
         gen = Generator('gen', self.is_training)
         gen.set_net()
+        disc = Discriminer('disc', self.is_training)
+        disc.set_net()
 
         self.gen_input = tf.placeholder(tf.float32,
                                         shape=[None, 10],
@@ -66,18 +66,18 @@ class GANMnistModel(Model):
 
         self.disc_false_output, disc_false_output_last = disc.output(self.disc_false_input)
 
-        gradient = tf.gradients(disc_false_output_last,
-                                [self.disc_false_input])[0]
-
         self.disc_true_input = tf.placeholder(tf.float32,
                                               shape=[None, 28, 28, 1],
                                               name="disc_true_input")
         self.disc_true_output_ref = tf.placeholder(tf.float32,
                                                    shape=[None, 10],
                                                    name="disc_true_output_ref")
-        self.disc_true_output, _ = disc.output(self.disc_true_input)
+        self.disc_true_output, disc_true_output_last = disc.output(self.disc_true_input)
 
-        self.gen_loss = tf.reduce_mean(-tf.log(tf.clip_by_value(disc_false_output_last,
+        gradient = tf.gradients(disc_true_output_last,
+                                [self.disc_true_input])[0]
+
+        self.gen_loss = tf.reduce_mean(-tf.log(tf.clip_by_value(1-disc_false_output_last,
                                                          htf.eps, 1)))
         self.disc_false_loss = tf.reduce_mean(-tf.log(tf.clip_by_value(disc_false_output_last,
                                                                 htf.eps, 1))) + tf.reduce_sum(tf.abs(gradient))
@@ -121,7 +121,7 @@ class GANMnistModel(Model):
 
 
 model = GANMnistModel(name="gan_mnist_model")
-#model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
+model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
 
 with model.default_evaluator() as eval:
     gan_input = np.random.normal(0, 1, (2, 10))
