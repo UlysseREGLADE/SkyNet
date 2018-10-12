@@ -35,16 +35,16 @@ class Generator(Net):
     def net(self, l_l):
         #Construction du classifieur
         with tf.variable_scope("fcon1_layer"):
-            l_l = self.fcon(l_l, 64)
+            l_l = self.fcon(l_l, 784)
+            l_l = tf.reshape(l_l, (-1, 28, 28, 1))
             l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("fcon2_layer"):
-            l_l = self.fcon(l_l, 128)
+            l_l = self.conv(l_l, 64, kernel=5)
             l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("fcon3_layer"):
-            l_l = self.fcon(l_l, 784)
-            l_l = tf.reshape(l_l, (-1, 28, 28, 1))
+            l_l = self.conv(l_l, 1, kernel=5)
             return tf.nn.sigmoid(l_l)
 
 
@@ -58,7 +58,7 @@ class GANMnistModel(Model):
         disc.set_net()
 
         self.gen_input = tf.placeholder(tf.float32,
-                                        shape=[None, 10],
+                                        shape=[None, 128],
                                         name="gen_input")
 
         self.gen_output = gen.output(self.gen_input)
@@ -80,9 +80,9 @@ class GANMnistModel(Model):
         self.gen_loss = tf.reduce_mean(-tf.log(tf.clip_by_value(1-disc_false_output_last,
                                                          htf.eps, 1)))
         self.disc_false_loss = tf.reduce_mean(-tf.log(tf.clip_by_value(disc_false_output_last,
-                                                                htf.eps, 1))) + tf.reduce_sum(tf.abs(gradient))
+                                                                htf.eps, 1)))
         self.disc_true_loss = htf.celoss(self.disc_true_output,
-                                         self.disc_true_output_ref) + tf.reduce_sum(tf.abs(gradient))
+                                         self.disc_true_output_ref)
 
         self.gen_trainer = gen.trainer(self.gen_loss,
                                        tf.train.AdamOptimizer())
@@ -99,7 +99,7 @@ class GANMnistModel(Model):
         # Training data
 
         disc_true_input, disc_true_output_ref = batch.train(100)
-        gen_input = np.random.normal(0, 1, (100, 10))
+        gen_input = np.random.normal(0, 1, (100, 128))
 
         # Running training
 
@@ -124,7 +124,7 @@ model = GANMnistModel(name="gan_mnist_model")
 model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
 
 with model.default_evaluator() as eval:
-    gan_input = np.random.normal(0, 1, (2, 10))
+    gan_input = np.random.normal(0, 1, (2, 128))
 
     gan_output = eval.compute(gan_input)
 
