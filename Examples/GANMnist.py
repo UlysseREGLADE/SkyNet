@@ -18,12 +18,14 @@ class Discriminer(Net):
     def net(self, l_l):
         #Construction du classifieur
         with tf.variable_scope("fcon1_layer1"):
-            l_l = self.fcon(l_l, 128)
-            l_l = tf.nn.relu(l_l)
+            l_l = self.conv(l_l, 2, kernel=5)
+            l_l = tf.nn.sigmoid(l_l)
+            l_l = htf.pool(l_l)
 
         with tf.variable_scope("fcon2_layer1"):
-            l_l = self.fcon(l_l, 64)
-            l_l = tf.nn.relu(l_l)
+            l_l = self.conv(l_l, 4, kernel=5)
+            l_l = tf.nn.sigmoid(l_l)
+            l_l = htf.pool(l_l)
 
         with tf.variable_scope("fcon3_layer1"):
             l_l = self.fcon(l_l, 11)
@@ -35,15 +37,17 @@ class Generator(Net):
     def net(self, l_l):
         #Construction du classifieur
         with tf.variable_scope("fcon1_layer"):
-            l_l = self.fcon(l_l, 784)
-            l_l = tf.reshape(l_l, (-1, 28, 28, 1))
-            l_l = tf.nn.relu(l_l)
+            l_l = self.fcon(l_l, 4*7**2)
+            l_l = tf.reshape(l_l, (-1, 7, 7, 4))
+            l_l = tf.nn.sigmoid(l_l)
 
         with tf.variable_scope("fcon2_layer"):
-            l_l = self.conv(l_l, 64, kernel=5)
-            l_l = tf.nn.relu(l_l)
+            l_l = htf.unpool(l_l, 7)
+            l_l = self.conv(l_l, 2, kernel=5)
+            l_l = tf.nn.sigmoid(l_l)
 
         with tf.variable_scope("fcon3_layer"):
+            l_l = htf.unpool(l_l, 14)
             l_l = self.conv(l_l, 1, kernel=5)
             return tf.nn.sigmoid(l_l)
 
@@ -86,10 +90,8 @@ class GANMnistModel(Model):
 
         self.gen_trainer = gen.trainer(self.gen_loss,
                                        tf.train.AdamOptimizer())
-        self.disc_true_trainer = disc.trainer(self.disc_true_loss,
+        self.disc_trainer = disc.trainer(self.disc_true_loss+self.disc_false_loss,
                                               tf.train.AdamOptimizer())
-        self.disc_false_trainer = disc.trainer(self.disc_false_loss,
-                                               tf.train.AdamOptimizer())
 
         self.input_list = [self.gen_input]
         self.output = self.gen_output
@@ -103,9 +105,8 @@ class GANMnistModel(Model):
 
         # Running training
 
-        _, _, _, disc_true_output, disc_false_output = sess.run((self.gen_trainer,
-                                                                 self.disc_true_trainer,
-                                                                 self.disc_false_trainer,
+        _, _, disc_true_output, disc_false_output = sess.run((self.gen_trainer,
+                                                                 self.disc_trainer,
                                                                  self.disc_true_output,
                                                                  self.disc_false_output),
                                                                  feed_dict={self.gen_input:gen_input,
@@ -121,7 +122,7 @@ class GANMnistModel(Model):
 
 
 model = GANMnistModel(name="gan_mnist_model")
-model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
+# model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
 
 with model.default_evaluator() as eval:
     gan_input = np.random.normal(0, 1, (2, 128))
