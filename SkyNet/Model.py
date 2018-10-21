@@ -142,6 +142,10 @@ class Evaluator(object):
             print("Last checkpoint loaded from: " + self.model.name+"/dump.csv")
             saver.restore(self.sess, self.model.name+"/save.ckpt")
 
+        else:
+
+            raise OSError(self.model.name + " do not exists")
+
         return self
 
     def __exit__(self, *args, **kwargs):
