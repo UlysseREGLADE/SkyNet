@@ -28,6 +28,16 @@ class Discriminer(Net):
             l_l = htf.pool(l_l)
 
         with tf.variable_scope("fcon3_layer1"):
+            l_l = self.conv(l_l, 8, kernel=5)
+            l_l = tf.nn.sigmoid(l_l)
+            l_l = htf.pool(l_l)
+
+        with tf.variable_scope("fcon4_layer1"):
+            l_l = self.conv(l_l, 16, kernel=5)
+            l_l = tf.nn.sigmoid(l_l)
+            l_l = htf.pool(l_l)
+
+        with tf.variable_scope("fcon5_layer1"):
             l_l = self.fcon(l_l, 11)
             l_l = tf.nn.softmax(l_l)
             return l_l[:, :10], l_l[:, 10]
@@ -36,20 +46,30 @@ class Generator(Net):
 
     def net(self, l_l):
         #Construction du classifieur
-        with tf.variable_scope("fcon1_layer"):
-            l_l = self.fcon(l_l, 4*7**2)
-            l_l = tf.reshape(l_l, (-1, 7, 7, 4))
+        with tf.variable_scope("fcon5_layer"):
+            l_l = self.fcon(l_l, 16*2**2)
+            l_l = tf.reshape(l_l, (-1, 2, 2, 16))
             l_l = tf.nn.sigmoid(l_l)
 
-        with tf.variable_scope("fcon2_layer"):
-            l_l = htf.unpool(l_l, 7)
-            l_l = self.conv(l_l, 2, kernel=5)
+        with tf.variable_scope("fcon4_layer"):
+            l_l = htf.unpool(l_l, 2)
+            l_l = self.conv(l_l, 8, kernel=5)
             l_l = tf.nn.sigmoid(l_l)
 
         with tf.variable_scope("fcon3_layer"):
-            l_l = htf.unpool(l_l, 14)
+            l_l = htf.unpool(l_l, 4)
+            l_l = self.conv(l_l, 4, kernel=5)
+            l_l = tf.nn.sigmoid(l_l)
+
+        with tf.variable_scope("fcon2_layer"):
+            l_l = htf.unpool(l_l, 8)
+            l_l = self.conv(l_l, 2, kernel=5)
+            l_l = tf.nn.sigmoid(l_l)
+
+        with tf.variable_scope("fcon1_layer"):
+            l_l = htf.unpool(l_l, 16)
             l_l = self.conv(l_l, 1, kernel=5)
-            return tf.nn.sigmoid(l_l)
+            return tf.nn.sigmoid(l_l)[:,2:30,2:30,:]
 
 
 class GANMnistModel(Model):
@@ -122,7 +142,7 @@ class GANMnistModel(Model):
 
 
 model = GANMnistModel(name="gan_mnist_model")
-# model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
+model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
 
 with model.default_evaluator() as eval:
     gan_input = np.random.normal(0, 1, (2, 128))
