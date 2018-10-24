@@ -63,9 +63,9 @@ class Net(object):
             shape = x.get_shape().as_list()
             in_channels = shape[3]
 
-            if(shape[1] is None or True):
+            if(shape[1] is None):
                 shape[1] = 1
-            if(shape[2] is None or True):
+            if(shape[2] is None):
                 shape[2] = 1
 
             if(init is None):

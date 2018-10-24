@@ -19,22 +19,22 @@ class Discriminer(Net):
         #Construction du classifieur
         with tf.variable_scope("fcon1_layer1"):
             l_l = self.conv(l_l, 2, kernel=5)
-            l_l = tf.nn.sigmoid(l_l)
+            l_l = tf.nn.relu(l_l)
             l_l = htf.pool(l_l)
 
         with tf.variable_scope("fcon2_layer1"):
             l_l = self.conv(l_l, 4, kernel=5)
-            l_l = tf.nn.sigmoid(l_l)
+            l_l = tf.nn.relu(l_l)
             l_l = htf.pool(l_l)
 
         with tf.variable_scope("fcon3_layer1"):
             l_l = self.conv(l_l, 8, kernel=5)
-            l_l = tf.nn.sigmoid(l_l)
+            l_l = tf.nn.relu(l_l)
             l_l = htf.pool(l_l)
 
         with tf.variable_scope("fcon4_layer1"):
             l_l = self.conv(l_l, 16, kernel=5)
-            l_l = tf.nn.sigmoid(l_l)
+            l_l = tf.nn.relu(l_l)
             l_l = htf.pool(l_l)
 
         with tf.variable_scope("fcon5_layer1"):
@@ -49,22 +49,22 @@ class Generator(Net):
         with tf.variable_scope("fcon5_layer"):
             l_l = self.fcon(l_l, 16*2**2)
             l_l = tf.reshape(l_l, (-1, 2, 2, 16))
-            l_l = tf.nn.sigmoid(l_l)
+            l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("fcon4_layer"):
             l_l = htf.unpool(l_l, 2)
             l_l = self.conv(l_l, 8, kernel=5)
-            l_l = tf.nn.sigmoid(l_l)
+            l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("fcon3_layer"):
             l_l = htf.unpool(l_l, 4)
             l_l = self.conv(l_l, 4, kernel=5)
-            l_l = tf.nn.sigmoid(l_l)
+            l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("fcon2_layer"):
             l_l = htf.unpool(l_l, 8)
             l_l = self.conv(l_l, 2, kernel=5)
-            l_l = tf.nn.sigmoid(l_l)
+            l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("fcon1_layer"):
             l_l = htf.unpool(l_l, 16)
