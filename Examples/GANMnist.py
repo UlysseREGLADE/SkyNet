@@ -107,11 +107,12 @@ class GANMnistModel(Model):
                                                                 htf.eps, 1)))
         self.disc_true_loss = htf.celoss(self.disc_true_output,
                                          self.disc_true_output_ref)
+        self.disc_loss = self.disc_true_loss+self.disc_false_loss
 
         self.gen_trainer = gen.trainer(self.gen_loss,
                                        tf.train.AdamOptimizer())
-        self.disc_trainer = disc.trainer(self.disc_true_loss+self.disc_false_loss,
-                                              tf.train.AdamOptimizer())
+        self.disc_trainer = disc.trainer(self.disc_loss,
+                                         tf.train.AdamOptimizer())
 
         self.input_list = [self.gen_input]
         self.output = self.gen_output
