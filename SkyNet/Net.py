@@ -67,7 +67,7 @@ class Net(object):
                 shape[1] = 1
             if(shape[2] is None):
                 shape[2] = 1
-            
+
             if(init is None):
                 init = self.default_init
             if(init=="normal"):
@@ -164,12 +164,16 @@ class Net(object):
 
     def trainer(self, loss, trainer=tf.train.AdamOptimizer()):
         #On recupere toutes les variables du graph a entrainer
-        trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                       scope=self.name)
         #Si il n'y a pas de batch normalisation, c'est tout bon
         if(not self.is_batch_norm):
-            return trainer.minimize(loss, var_list=trainables)
+            return trainer.minimize(loss, var_list=self.trainables)
         #Si non, il faut tenir compte des update_ops
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.name)
         with tf.control_dependencies(update_ops):
-            return trainer.minimize(loss, var_list=trainables)
+            return trainer.minimize(loss, var_list=self.trainables)
+
+    @property
+    def trainables(self):
+
+        return tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                 scope=self.name)
