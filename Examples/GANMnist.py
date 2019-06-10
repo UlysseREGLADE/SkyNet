@@ -122,7 +122,7 @@ class GANMnistModel(Model):
 
 
 model = GANMnistModel(name="gan_mnist_model")
-# model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
+model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
 
 with model.default_evaluator() as eval:
     gan_input = np.random.normal(0, 1, (2, 128))
