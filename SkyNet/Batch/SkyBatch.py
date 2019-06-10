@@ -8,6 +8,7 @@ from SkyNet.Batch.Batch import Batch
 import os
 from scipy import misc
 import time
+from clint.textui import progress
 
 COR = 10
 SIZE = 32
@@ -46,14 +47,22 @@ class SkyBatch(Batch):
             if(not os.path.exists("SkyDataSet.tar.gz")):
 
                 # TODO: Mettre sur git la data-base
-                pass
-                print("Downloading sky-data-set from: https://www..tar.gz")
+                # pass
+                print("Downloading sky-data-set from: https://cloud.mines-paristech.fr/index.php/s/cB4q2rRwAdh1E8G/download")
                 print("(Can take a few seconds)")
-                url = ""
-                r = requests.get(url, allow_redirects=True)
+                url = "https://cloud.mines-paristech.fr/index.php/s/cB4q2rRwAdh1E8G/download"
+                path = "SkyDataSet.tar.gz"
+                r = requests.get(url, allow_redirects=True, stream=True)
+
+                with open(path, 'wb') as f:
+                    total_length = int(r.headers.get('content-length'))
+                    for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length/1024) + 1): 
+                        if chunk:
+                            f.write(chunk)
+                            f.flush()
 
             # On extrait les fichiers pour avoir un acces plus rappide
-            with tarfile.open("SkyDataSet.tar.gz", 'tar:gz') as file:
+            with tarfile.open("SkyDataSet.tar.gz", 'r:gz') as file:
                 file.extractall()
 
         # Lecture de la liste des fichiers
@@ -162,7 +171,7 @@ class SkyBatch(Batch):
     def test_op(self, size=0):
 
         if(not hasattr(self, 'test_flag')):
-            self.train_flag = True
+            self.test_flag = True
             print("Loading test data...")
             self.load_test()
 
