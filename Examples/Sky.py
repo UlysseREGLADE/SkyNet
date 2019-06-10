@@ -77,14 +77,15 @@ class SkyModel(Model):
 
 batch = SkyBatch()
 model = SkyModel(name="sky_model")
-# model.train(batch=batch, epochs=10, display=10, save=10)
+#model.train(batch=batch, epochs=10, display=10, save=10)
 
 with model.default_evaluator() as eval:
 
 
     acc_table = np.zeros((batch.test_size))
 
-    for i in range(batch.test_size):
+    # for i in range(batch.test_size):
+    for i in range(5):
         image, lab_image = batch.test_image()
         output = eval.compute(format_image(image))[0]
         acc = 1-np.mean(np.logical_xor(output[:,:,0]>0.5, lab_image>0.5))
@@ -92,15 +93,18 @@ with model.default_evaluator() as eval:
         print(acc)
 
 
-    print(np.mean(acc_table))
-    plt.figure()
-    plt.imshow(image)
-    plt.show(False)
+        print(np.mean(acc_table))
+        plt.figure()
+        plt.imshow(image)
+        plt.show(False)
 
-    plt.figure()
-    plt.imshow(output[:,:,0]>0.5)
-    plt.show(False)
+        plt.figure()
+        plt.imshow(output[:,:,0]>0.5)
+        plt.show(False)
 
-    plt.figure()
-    plt.imshow(lab_image)
-    plt.show()
+        plt.figure()
+        plt.imshow(lab_image)
+        if(i==4):
+            plt.show()
+        else:
+            plt.show(False)
