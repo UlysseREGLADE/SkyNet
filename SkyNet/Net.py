@@ -56,7 +56,7 @@ class Net(object):
                                                       is_training=is_training)
             return normalized
 
-    def conv(self, x, out_channels, kernel=3, init=None, name="conv", padding="SAME"):
+    def conv(self, x, out_channels, kernel=3, strides=1, init=None, name="conv", padding="SAME"):
         name = self.get_name(name)
         with tf.variable_scope(name):
             #On calcule la variance relative a l'initialisation des poids
@@ -82,7 +82,7 @@ class Net(object):
                          name="weigth")
             b = self.var([out_channels], 0, name="bias")
             #Enfin, on retourne ce qu'il faut
-            conv = tf.nn.conv2d(x, w, strides=[1, 1, 1, 1], padding=padding)
+            conv = tf.nn.conv2d(x, w, strides=[1, strides, strides, 1], padding=padding)
             return (conv + b)
 
     def fcon(self, x, out_size, init=None, name="fcon"):
