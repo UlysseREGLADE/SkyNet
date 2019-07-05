@@ -1,0 +1,114 @@
+import sys
+if(__name__ == "__main__"):
+    sys.path.append('../../')
+from SkyNet.Batch.Batch import Batch
+import numpy as np
+import os
+import time
+
+
+class SkyPix2pixBatch(Batch):
+
+    def load(self, size = 256):
+
+        name = "SkyDataSet_resized"
+        path = name + ".tar.gz"
+
+        if(not os.path.exists(name)):
+
+            import tarfile
+
+            if(not os.path.exists(path)):
+
+                from clint.textui import progress
+                import requests
+                import clint
+
+                url = "https://cloud.mines-paristech.fr/index.php/s/-------------/download"
+                name = "SkyDataSet_resized"
+
+                print("Downloading sky-data-set from: " + url)
+                print("(Can take a few seconds)")
+                r = requests.get(url, allow_redirects=True, stream=True)
+
+                with open(path, 'wb') as f:
+                    total_length = int(r.headers.get('content-length'))
+                    for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length/1024) + 1):
+                        if chunk:
+                            f.write(chunk)
+                            f.flush()
+
+            with tarfile.open(path, 'r:gz') as file:
+                file.extractall()
+
+        self.images = np.load(name+"/"+name.split("_")[0]+"-%ix%i_input.npy"%(size, size))
+        self.masks = np.load(name+"/"+name.split("_")[0]+"-%ix%i_output.npy"%(size, size))
+
+        indexs = np.arange(self.images.shape[0])
+
+        np.random.seed(314159)
+        np.random.shuffle(indexs)
+        np.random.seed(int(time.time()))
+
+        self.anchor = int(0.90 * self.images.shape[0])
+
+        self.train_indexs = indexs[:self.anchor]
+
+        self.test_indexs = indexs[self.anchor:]
+
+        #Alloaction des tableux en memoire et init de la taille
+        self.train_size = self.train_indexs.shape[0]
+        self.test_size = self.test_indexs.shape[0]
+
+        self.input_shape = (size, size, 3)
+        self.output_shape = (size, size, 1)
+
+        self.count = 0
+
+        #On debug le chargement de cifra
+        print("Loading done:")
+        print("Training set size = %i"%(len(self.train_indexs)))
+        print("Test set size = %i"%(len(self.test_indexs)))
+        print()
+
+    def train_op(self, size):
+
+        if(size + (self.count%self.train_size) < self.train_size):
+
+            start = self.count%self.train_size
+            end = start + size
+            images = self.images[self.train_indexs[start:end]]
+            masks = self.masks[self.train_indexs[start:end]]
+
+        else:
+
+            np.random.shuffle(self.train_indexs[:self.anchor])
+            images = self.images[self.train_indexs[:size]]
+            masks = self.masks[self.train_indexs[:size]]
+
+        images = images.astype(np.float32)/255
+        masks = masks.astype(np.float32)/255
+
+        return images, masks
+
+
+    def test_op(self, size=0):
+
+        index = np.arange(self.test_size)
+        np.random.shuffle(index)
+        index = index[:size]
+        index = self.test_indexs[index]
+
+        images = self.images[index].astype(np.float32)/255
+        masks = self.masks[index].astype(np.float32)/255
+
+        return images, masks
+
+
+if(__name__ == "__main__"):
+
+    batch = SkyPix2pixBatch()
+    train = batch.train(1)
+    print(train[0].shape, train[1].shape)
+    test = batch.test(1)
+    print(test[0].shape, test[1].shape)
