@@ -325,6 +325,8 @@ class Model(object):
 
                 if(clear):
                     print(line, end='\r')
+                else:
+                    print(line)
 
             print()
 
