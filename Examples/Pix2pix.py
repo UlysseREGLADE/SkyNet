@@ -137,7 +137,7 @@ class GANMnistModel(Model):
 
         # Training data
 
-        gen_input, disc_true_input = batch.train(100)
+        gen_input, disc_true_input = batch.train(1)
 
         # Running training
 
