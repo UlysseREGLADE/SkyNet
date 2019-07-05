@@ -108,6 +108,8 @@ class SkyPix2pixBatch(Batch):
 
     def get_test_by_id(self, ids):
 
+        ids = np.array(ids)
+
         images = (self.images[ids%self.test_size].astype(np.float32)/255)-0.5
         masks = (self.masks[ids%self.test_size].astype(np.float32)/255)-0.5
 
