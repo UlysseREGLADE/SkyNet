@@ -153,20 +153,24 @@ class Pix2pixModel(Model):
 
 
         gen_input, disc_true_input = batch.get_test_by_id([314])
+        gen_output = sess.run((self.gen_output), feed_dict={self.is_training:True,
+                                                            self.gen_input:gen_input,
+                                                            self.disc_true_input:disc_true_input})
 
-        clear_output(wait=True)
-        plt.figure(figsize=(15,15))
+        if(count%100==0):
+            clear_output(wait=True)
+            plt.figure(figsize=(15,15))
 
-        display_list = [gen_input[0,:,:]+0.5, disc_true_input[0,:,:,0]+0.5, gen_output[0,:,:,0]]
-        title = ['Input Image', 'Ground Truth', 'Predicted Image']
+            display_list = [gen_input[0,:,:]+0.5, disc_true_input[0,:,:,0]+0.5, gen_output[0,:,:,0]]
+            title = ['Input Image', 'Ground Truth', 'Predicted Image']
 
-        for i in range(3):
-            plt.subplot(1, 3, i+1)
-            plt.title(title[i])
-            # getting the pixel values between [0, 1] to plot it.
-            plt.imshow(display_list[i])
-            plt.axis('off')
-        plt.show()
+            for i in range(3):
+                plt.subplot(1, 3, i+1)
+                plt.title(title[i])
+                # getting the pixel values between [0, 1] to plot it.
+                plt.imshow(display_list[i])
+                plt.axis('off')
+            plt.show()
 
         return {"disc_loss" : disc_loss,
                 "gen_loss" : gen_loss}
