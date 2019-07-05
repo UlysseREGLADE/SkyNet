@@ -9,7 +9,7 @@ from SkyNet.Net import Net
 from SkyNet.Model import Model
 import SkyNet.HandyTensorFunctions as htf
 import SkyNet.HandyNumpyFunctions as hnf
-from SkyNet.Batch.MnistBatch import MnistBatch
+from SkyNet.Batch.SkyPix2pixBatch import SkyPix2pixBatch
 
 INPUT_CHANNELS = 3
 OUTPUT_CHANNELS = 1
@@ -71,18 +71,21 @@ class Generator(Net):
 
         for i in range(2, len(channels)+1):
 
-            with tf.variable_scope("down_sample_%02i"%(i-1)):
+            with tf.variable_scope("up_sample_%02i"%(i-1)):
 
-                l_l = htf.unpool(l_l)
+                l_l = htf.unpool(l_l, 2**(i-2))
+                print(i)
+                print(l_l.shape)
+                print(channels[-i])
                 l_l = self.conv(l_l, channels[-i], kernel=4)
 
                 l_l = self.batch_norm(l_l)
 
                 l_l = htf.lrelu(l_l)
 
-                l_l = tf.concat([l_l, skips[-(i-1)]], 3)
+                l_l = tf.concat([l_l, skips[-i]], 3)
 
-        l_l = htf.unpool(l_l)
+        l_l = htf.unpool(l_l, 128)
         l_l = self.conv(l_l, OUTPUT_CHANNELS, kernel=4)
         l_l = tf.nn.sigmoid(l_l)
 
@@ -134,18 +137,16 @@ class GANMnistModel(Model):
 
         # Training data
 
-        disc_true_input, disc_true_output_ref = batch.train(100)
-        gen_input = np.random.normal(0, 1, (100, 128))
+        gen_input, disc_true_input = batch.train(100)
 
         # Running training
 
         _, _, disc_true_output, disc_false_output = sess.run((self.gen_trainer,
-                                                                 self.disc_trainer,
-                                                                 self.disc_true_output,
-                                                                 self.disc_false_output),
-                                                                 feed_dict={self.gen_input:gen_input,
-                                                                            self.disc_true_input:disc_true_input,
-                                                                            self.disc_true_output_ref:disc_true_output_ref})
+                                                              self.disc_trainer,
+                                                              self.disc_true_output,
+                                                              self.disc_false_output),
+                                                             feed_dict={self.gen_input:gen_input,
+                                                                        self.disc_true_input:disc_true_input})
 
 
 
@@ -155,8 +156,8 @@ class GANMnistModel(Model):
 
 
 
-model = GANMnistModel(name="gan_mnist_model")
-model.train(batch=MnistBatch(), epochs=10, display=10, save=10)
+model = GANMnistModel(name="gan_sky_pix2pix_model")
+model.train(batch=SkyPix2pixBatch(), epochs=150, display=10, save=10)
 
 with model.default_evaluator() as eval:
     gan_input = np.random.normal(0, 1, (2, 128))
