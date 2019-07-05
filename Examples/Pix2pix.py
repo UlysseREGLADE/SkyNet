@@ -11,6 +11,9 @@ import SkyNet.HandyTensorFunctions as htf
 import SkyNet.HandyNumpyFunctions as hnf
 from SkyNet.Batch.SkyPix2pixBatch import SkyPix2pixBatch
 
+import matplotlib.pyplot as plt
+from IPython.display import clear_output
+
 INPUT_CHANNELS = 3
 OUTPUT_CHANNELS = 1
 IMAGE_SIZE = 256
@@ -141,15 +144,20 @@ class GANMnistModel(Model):
 
         # Running training
 
-        _, _, disc_loss, gen_loss = sess.run((self.gen_trainer,
+        _, _, disc_loss, gen_loss, gen_output = sess.run((self.gen_trainer,
                                               self.disc_trainer,
                                               self.disc_loss,
-                                              self.gen_loss),
+                                              self.gen_loss,
+                                              self.gen_output),
                                              feed_dict={self.is_training:True,
                                                         self.gen_input:gen_input,
                                                         self.disc_true_input:disc_true_input})
 
 
+        clear_output(wait=True)
+        plt.figure()
+        plt.imshow(gen_output[0,:,:,0])
+        plt.show()
 
         return {"disc_loss" : disc_loss,
                 "gen_loss" : gen_loss}
