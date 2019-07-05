@@ -152,7 +152,7 @@ class Pix2pixModel(Model):
 
 
 
-        gen_input, disc_true_input = batch.get_test_by_id(314)
+        gen_input, disc_true_input = batch.get_test_by_id([314])
 
         clear_output(wait=True)
         plt.figure(figsize=(15,15))
