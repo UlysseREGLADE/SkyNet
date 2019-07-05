@@ -152,10 +152,12 @@ class Pix2pixModel(Model):
 
 
 
+        gen_input, disc_true_input = batch.get_test_by_id(314)
+
         clear_output(wait=True)
         plt.figure(figsize=(15,15))
 
-        display_list = [gen_input[0,:,:,0]+0.5, disc_true_input[0,:,:,0]+0.5, gen_output[0,:,:,0]]
+        display_list = [gen_input[0,:,:]+0.5, disc_true_input[0,:,:,0]+0.5, gen_output[0,:,:,0]]
         title = ['Input Image', 'Ground Truth', 'Predicted Image']
 
         for i in range(3):
@@ -173,4 +175,4 @@ class Pix2pixModel(Model):
 if(__name__ == "__main__"):
 
     model = Pix2pixModel(name="gan_sky_pix2pix_model")
-    model.train(batch=SkyPix2pixBatch(), epochs=150, display=1, save=10)
+    model.train(batch=SkyPix2pixBatch(), epochs=150, display=100, save=100)
