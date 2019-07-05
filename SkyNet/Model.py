@@ -211,7 +211,7 @@ class Model(object):
 
         trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 
-    def train(self, batch, epochs, display=100, save=100, overwrite=False):
+    def train(self, batch, epochs, display=100, save=100, overwrite=False, clear=True):
 
         """
         When called this function will start the training of the model, and save
@@ -322,7 +322,9 @@ class Model(object):
                 if(not debug is None and not debug is {}):
                     for debug_name in debug:
                         line += ", " + debug_name + ": %.2f"%(debug[debug_name])
-                print(line, end='\r')
+
+                if(clear):
+                    print(line, end='\r')
 
             print()
 

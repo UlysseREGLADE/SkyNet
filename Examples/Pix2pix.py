@@ -141,23 +141,23 @@ class GANMnistModel(Model):
 
         # Running training
 
-        _, _, disc_true_output, disc_false_output = sess.run((self.gen_trainer,
-                                                              self.disc_trainer,
-                                                              self.disc_true_output,
-                                                              self.disc_false_output),
-                                                             feed_dict={self.gen_input:gen_input,
-                                                                        self.disc_true_input:disc_true_input})
+        _, _, disc_loss, gen_loss = sess.run((self.gen_trainer,
+                                              self.disc_trainer,
+                                              self.disc_loss,
+                                              self.gen_loss),
+                                             feed_dict={self.is_training:True,
+                                                        self.gen_input:gen_input,
+                                                        self.disc_true_input:disc_true_input})
 
 
 
-        return {"acc_disc" : hnf.compute_acc(disc_true_output_ref,
-                                             disc_true_output),
-                "fal_disc" : np.mean(np.sum(disc_false_output, axis=1))}
+        return {"disc_loss" : disc_loss,
+                "gen_loss" : gen_loss}
 
 
 
 model = GANMnistModel(name="gan_sky_pix2pix_model")
-model.train(batch=SkyPix2pixBatch(), epochs=150, display=10, save=10)
+model.train(batch=SkyPix2pixBatch(), epochs=150, display=1, save=10, clear=False)
 
 with model.default_evaluator() as eval:
     gan_input = np.random.normal(0, 1, (2, 128))
