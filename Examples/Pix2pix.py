@@ -1,9 +1,9 @@
 import os
 import sys
 import numpy as np
-sys.path.append('../')
 import tensorflow as tf
-import matplotlib.pyplot as plt
+
+sys.path.append('../')
 
 from SkyNet.Net import Net
 from SkyNet.Model import Model
@@ -119,9 +119,6 @@ class Pix2pixModel(Model):
 
         self.disc_true_output = disc.output([self.disc_true_input, self.gen_input])
 
-        # gradient = tf.gradients(disc_true_output_last,
-        #                         [self.disc_true_input])[0]
-
         ones = tf.ones_like(self.disc_true_output)
         zeros = tf.zeros_like(self.disc_true_output)
 
@@ -145,18 +142,21 @@ class Pix2pixModel(Model):
         # Running training
 
         _, _, disc_loss, gen_loss, gen_output = sess.run((self.gen_trainer,
-                                              self.disc_trainer,
-                                              self.disc_loss,
-                                              self.gen_loss,
-                                              self.gen_output),
-                                             feed_dict={self.is_training:True,
-                                                        self.gen_input:gen_input,
-                                                        self.disc_true_input:disc_true_input})
+                                                          self.disc_trainer,
+                                                          self.disc_loss,
+                                                          self.gen_loss,
+                                                          self.gen_output),
+                                                         feed_dict={self.is_training:True,
+                                                                    self.gen_input:gen_input,
+                                                                    self.disc_true_input:disc_true_input})
 
 
         clear_output(wait=True)
-        plt.figure()
-        plt.imshow(gen_output[0,:,:,0])
+        plt.figure(figsize=(15,15))
+        f, (ax1, ax2, ax3) = plt.subplots(1, 3)
+        ax1.imshow(gen_input)
+        ax2.imshow(disc_true_input)
+        ax3.imshow(gen_output[0,:,:,0])
         plt.show()
 
         return {"disc_loss" : disc_loss,
@@ -167,15 +167,3 @@ if(__name__ == "__main__"):
 
     model = Pix2pixModel(name="gan_sky_pix2pix_model")
     model.train(batch=SkyPix2pixBatch(), epochs=150, display=1, save=10)
-
-    with model.default_evaluator() as eval:
-        gan_input = np.random.normal(0, 1, (2, 128))
-
-        gan_output = eval.compute(gan_input)
-
-        plt.figure()
-        plt.imshow(gan_output[1, :, :, 0])
-        plt.show(False)
-        plt.figure()
-        plt.imshow(gan_output[0, :, :, 0])
-        plt.show()

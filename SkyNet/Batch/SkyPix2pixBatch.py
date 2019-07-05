@@ -24,6 +24,7 @@ class SkyPix2pixBatch(Batch):
                 import requests
                 import clint
 
+                print("Please input the hach to download the database:")
                 hach = input()
                 url = "https://cloud.mines-paristech.fr/index.php/s/"+hach+"/download"
                 name = "SkyDataSet_resized"
@@ -87,24 +88,30 @@ class SkyPix2pixBatch(Batch):
             images = self.images[self.train_indexs[:size]]
             masks = self.masks[self.train_indexs[:size]]
 
-        images = images.astype(np.float32)/255
-        masks = masks.astype(np.float32)/255
+        images = (images.astype(np.float32)/255)-0.5
+        masks = (masks.astype(np.float32)/255)-0.5
 
         return images, masks
 
 
-    def test_op(self, size=0):
+    def test_op(self, size=1):
 
         index = np.arange(self.test_size)
         np.random.shuffle(index)
         index = index[:size]
         index = self.test_indexs[index]
 
-        images = self.images[index].astype(np.float32)/255
-        masks = self.masks[index].astype(np.float32)/255
+        images = (self.images[index].astype(np.float32)/255)-0.5
+        masks = (self.masks[index].astype(np.float32)/255)-0.5
 
         return images, masks
 
+    def get_test_by_id(self, ids):
+
+        images = (self.images[ids%self.test_size].astype(np.float32)/255)-0.5
+        masks = (self.masks[ids%self.test_size].astype(np.float32)/255)-0.5
+
+        return images, masks
 
 if(__name__ == "__main__"):
 
