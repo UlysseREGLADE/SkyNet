@@ -24,7 +24,8 @@ class SkyPix2pixBatch(Batch):
                 import requests
                 import clint
 
-                url = "https://cloud.mines-paristech.fr/index.php/s/-------------/download"
+                hach = input()
+                url = "https://cloud.mines-paristech.fr/index.php/s/"+hach+"/download"
                 name = "SkyDataSet_resized"
 
                 print("Downloading sky-data-set from: " + url)
