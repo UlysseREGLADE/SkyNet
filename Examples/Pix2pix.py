@@ -13,6 +13,7 @@ from SkyNet.Batch.MnistBatch import MnistBatch
 
 INPUT_CHANNELS = 3
 OUTPUT_CHANNELS = 1
+IMAGE_SIZE = 256
 LAMBDA = 100
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -20,21 +21,33 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 class Discriminer(Net):
 
     def net(self, l_l):
-        #Construction du classifieur
-        with tf.variable_scope("fcon1_layer1"):
-            l_l = self.conv(l_l, 2, kernel=5)
-            l_l = tf.nn.sigmoid(l_l)
-            l_l = htf.pool(l_l)
 
-        with tf.variable_scope("fcon2_layer1"):
-            l_l = self.conv(l_l, 4, kernel=5)
-            l_l = tf.nn.sigmoid(l_l)
-            l_l = htf.pool(l_l)
+        inp, tar = l_l[0], l_l[1]
 
-        with tf.variable_scope("fcon3_layer1"):
-            l_l = self.fcon(l_l, 11)
-            l_l = tf.nn.softmax(l_l)
-            return l_l[:, :10], l_l[:, 10]
+        l_l = tf.concat([inp, tar], 3)
+
+        with tf.variable_scope("down_sample_1"):
+            l_l = self.conv(l_l, 64, kernel=4, strides=2)
+            l_l = htf.lrelu(l_l)
+
+        with tf.variable_scope("down_sample_2"):
+            l_l = self.conv(l_l, 128, kernel=4, strides=2)
+            l_l = self.batch_norm(l_l)
+            l_l = htf.lrelu(l_l)
+
+        with tf.variable_scope("down_sample_3"):
+            l_l = self.conv(l_l, 256, kernel=4, strides=2)
+            l_l = self.batch_norm(l_l)
+            l_l = htf.lrelu(l_l)
+
+        with tf.variable_scope("conv_4"):
+            l_l = self.conv(l_l, 512, kernel=4, strides=1)
+            l_l = self.batch_norm(l_l)
+            l_l = htf.lrelu(l_l)
+
+        with tf.variable_scope("conv_5"):
+            l_l = self.conv(l_l, 1, kernel=4, strides=1)
+            return tf.nn.sigmoid(l_l)
 
 class Generator(Net):
 
@@ -86,36 +99,33 @@ class GANMnistModel(Model):
         disc.set_net()
 
         self.gen_input = tf.placeholder(tf.float32,
-                                        shape=[None, 128],
+                                        shape=[None, IMAGE_SIZE, IMAGE_SIZE, INPUT_CHANNELS],
                                         name="gen_input")
 
         self.gen_output = gen.output(self.gen_input)
         self.disc_false_input = self.gen_output
 
-        self.disc_false_output, disc_false_output_last = disc.output(self.disc_false_input)
+        self.disc_false_output = disc.output([self.disc_false_input, self.gen_input])
 
         self.disc_true_input = tf.placeholder(tf.float32,
-                                              shape=[None, 28, 28, 1],
+                                              shape=[None, IMAGE_SIZE, IMAGE_SIZE, OUTPUT_CHANNELS],
                                               name="disc_true_input")
-        self.disc_true_output_ref = tf.placeholder(tf.float32,
-                                                   shape=[None, 10],
-                                                   name="disc_true_output_ref")
-        self.disc_true_output, disc_true_output_last = disc.output(self.disc_true_input)
 
-        gradient = tf.gradients(disc_true_output_last,
-                                [self.disc_true_input])[0]
+        self.disc_true_output = disc.output([self.disc_true_input, self.gen_input])
 
-        self.gen_loss = tf.reduce_mean(-tf.log(tf.clip_by_value(1-disc_false_output_last,
-                                                         htf.eps, 1)))
-        self.disc_false_loss = tf.reduce_mean(-tf.log(tf.clip_by_value(disc_false_output_last,
-                                                                htf.eps, 1)))
-        self.disc_true_loss = htf.celoss(self.disc_true_output,
-                                         self.disc_true_output_ref)
+        # gradient = tf.gradients(disc_true_output_last,
+        #                         [self.disc_true_input])[0]
+
+        ones = tf.ones_like(self.disc_true_output)
+        zeros = tf.zeros_like(self.disc_true_output)
+
+        self.gen_loss = LAMBDA*htf.l1loss(self.gen_output, self.disc_true_input) + htf.ce2Dloss(self.disc_false_output, ones)
+        self.disc_loss = htf.ce2Dloss(self.disc_false_output, zeros) + htf.ce2Dloss(self.disc_true_output, ones)
 
         self.gen_trainer = gen.trainer(self.gen_loss,
-                                       tf.train.AdamOptimizer())
-        self.disc_trainer = disc.trainer(self.disc_true_loss+self.disc_false_loss,
-                                              tf.train.AdamOptimizer())
+                                       tf.train.AdamOptimizer(2e-4, 0.5))
+        self.disc_trainer = disc.trainer(self.disc_loss,
+                                              tf.train.AdamOptimizer(2e-4, 0.5))
 
         self.input_list = [self.gen_input]
         self.output = self.gen_output
