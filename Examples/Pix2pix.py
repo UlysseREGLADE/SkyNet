@@ -12,7 +12,6 @@ import SkyNet.HandyNumpyFunctions as hnf
 from SkyNet.Batch.SkyPix2pixBatch import SkyPix2pixBatch
 
 import matplotlib.pyplot as plt
-%matplotlib inline
 from IPython.display import clear_output
 
 INPUT_CHANNELS = 3
@@ -96,7 +95,7 @@ class Generator(Net):
         return l_l
 
 
-class GANMnistModel(Model):
+class Pix2pixModel(Model):
 
     def reset_op(self, **kwargs):
 
@@ -156,7 +155,7 @@ class GANMnistModel(Model):
 
 
         clear_output(wait=True)
-        plt.figure(figsize=(15,15))
+        plt.figure()
         plt.imshow(gen_output[0,:,:,0])
         plt.show()
 
@@ -164,18 +163,19 @@ class GANMnistModel(Model):
                 "gen_loss" : gen_loss}
 
 
+if(__name__ == "__main__"):
 
-model = GANMnistModel(name="gan_sky_pix2pix_model")
-model.train(batch=SkyPix2pixBatch(), epochs=150, display=1, save=10)
+    model = Pix2pixModel(name="gan_sky_pix2pix_model")
+    model.train(batch=SkyPix2pixBatch(), epochs=150, display=1, save=10)
 
-with model.default_evaluator() as eval:
-    gan_input = np.random.normal(0, 1, (2, 128))
+    with model.default_evaluator() as eval:
+        gan_input = np.random.normal(0, 1, (2, 128))
 
-    gan_output = eval.compute(gan_input)
+        gan_output = eval.compute(gan_input)
 
-    plt.figure()
-    plt.imshow(gan_output[1, :, :, 0])
-    plt.show(False)
-    plt.figure()
-    plt.imshow(gan_output[0, :, :, 0])
-    plt.show()
+        plt.figure()
+        plt.imshow(gan_output[1, :, :, 0])
+        plt.show(False)
+        plt.figure()
+        plt.imshow(gan_output[0, :, :, 0])
+        plt.show()
