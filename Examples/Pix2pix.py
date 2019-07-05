@@ -157,7 +157,7 @@ class GANMnistModel(Model):
 
 
 model = GANMnistModel(name="gan_sky_pix2pix_model")
-model.train(batch=SkyPix2pixBatch(), epochs=150, display=1, save=10, clear=False)
+model.train(batch=SkyPix2pixBatch(), epochs=150, display=1, save=10)
 
 with model.default_evaluator() as eval:
     gan_input = np.random.normal(0, 1, (2, 128))
