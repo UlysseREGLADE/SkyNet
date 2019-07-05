@@ -12,6 +12,7 @@ import SkyNet.HandyNumpyFunctions as hnf
 from SkyNet.Batch.SkyPix2pixBatch import SkyPix2pixBatch
 
 import matplotlib.pyplot as plt
+%matplotlib inline
 from IPython.display import clear_output
 
 INPUT_CHANNELS = 3
@@ -155,7 +156,7 @@ class GANMnistModel(Model):
 
 
         clear_output(wait=True)
-        plt.figure()
+        plt.figure(figsize=(15,15))
         plt.imshow(gen_output[0,:,:,0])
         plt.show()
 
