@@ -156,8 +156,8 @@ class Pix2pixModel(Model):
         print(disc_true_input.shape)
         plt.figure(figsize=(15,15))
         f, (ax1, ax2, ax3) = plt.subplots(1, 3)
-        ax1.imshow(gen_input[0,:,:,0]+0.5)
-        ax2.imshow(disc_true_input[0,:,:,0]+0.5)
+        #ax1.imshow(gen_input[0,:,:,0]+0.5)
+        #ax2.imshow(disc_true_input[0,:,:,0]+0.5)
         ax3.imshow(gen_output[0,:,:,0])
         plt.show()
 
