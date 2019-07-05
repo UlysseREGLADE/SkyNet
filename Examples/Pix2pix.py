@@ -151,20 +151,19 @@ class Pix2pixModel(Model):
                                                                     self.disc_true_input:disc_true_input})
 
 
-        print(gen_input.shape)
-        # clear_output(wait=True)
-        # plt.figure(figsize=(15,15))
-        #
-        # display_list = [gen_input[0,:,:,0]+0.5, disc_true_input[0,:,:,0]+0.5, gen_output[0,:,:,0]]
-        # title = ['Input Image', 'Ground Truth', 'Predicted Image']
-        #
-        # for i in range(3):
-        #     plt.subplot(1, 3, i+1)
-        #     plt.title(title[i])
-        #     # getting the pixel values between [0, 1] to plot it.
-        #     plt.imshow(display_list[i] * 0.5 + 0.5)
-        #     plt.axis('off')
-        # plt.show()
+        clear_output(wait=True)
+        plt.figure(figsize=(15,15))
+
+        display_list = [gen_input[0,:,:,0]+0.5, disc_true_input[0,:,:,0]+0.5, gen_output[0,:,:,0]]
+        title = ['Input Image', 'Ground Truth', 'Predicted Image']
+
+        for i in range(3):
+            plt.subplot(1, 3, i+1)
+            plt.title(title[i])
+            # getting the pixel values between [0, 1] to plot it.
+            plt.imshow(display_list[i] * 0.5 + 0.5)
+            plt.axis('off')
+        plt.show()
 
         return {"disc_loss" : disc_loss,
                 "gen_loss" : gen_loss}
