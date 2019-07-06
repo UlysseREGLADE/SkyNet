@@ -82,7 +82,7 @@ class Generator(Net):
                 l_l = self.batch_norm(l_l)
 
                 if(i<=4):
-                    l_l = tf.nn.dropout(rate=0.5)
+                    l_l = tf.nn.dropout(l_l, rate=0.5)
 
                 l_l = tf.nn.relu(l_l)
 
