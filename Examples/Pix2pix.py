@@ -30,26 +30,26 @@ class Discriminer(Net):
         l_l = tf.concat([inp, tar], 3)
 
         with tf.variable_scope("down_sample_1"):
-            l_l = self.conv(l_l, 64, kernel=4, strides=2)
+            l_l = self.conv(l_l, 64, kernel=4, strides=2, stddev=0.02, use_bias=False)
             l_l = htf.lrelu(l_l)
 
         with tf.variable_scope("down_sample_2"):
-            l_l = self.conv(l_l, 128, kernel=4, strides=2)
+            l_l = self.conv(l_l, 128, kernel=4, strides=2, stddev=0.02, use_bias=False)
             l_l = self.batch_norm(l_l)
             l_l = htf.lrelu(l_l)
 
         with tf.variable_scope("down_sample_3"):
-            l_l = self.conv(l_l, 256, kernel=4, strides=2)
+            l_l = self.conv(l_l, 256, kernel=4, strides=2, stddev=0.02, use_bias=False)
             l_l = self.batch_norm(l_l)
             l_l = htf.lrelu(l_l)
 
         with tf.variable_scope("conv_4"):
-            l_l = self.conv(l_l, 512, kernel=4, strides=1)
+            l_l = self.conv(l_l, 512, kernel=4, strides=1, stddev=0.02, use_bias=False)
             l_l = self.batch_norm(l_l)
             l_l = htf.lrelu(l_l)
 
         with tf.variable_scope("conv_5"):
-            l_l = self.conv(l_l, 1, kernel=4, strides=1)
+            l_l = self.conv(l_l, 1, kernel=4, strides=1, stddev=0.02)
             return tf.nn.sigmoid(l_l)
 
 class Generator(Net):
@@ -63,7 +63,7 @@ class Generator(Net):
 
             with tf.variable_scope("down_sample_%02i"%(i+1)):
 
-                l_l = self.conv(l_l, channels[i], kernel=4, strides=2)
+                l_l = self.conv(l_l, channels[i], kernel=4, strides=2, stddev=0.02, use_bias=False)
 
                 if(i != 0):
                     l_l = self.batch_norm(l_l)
@@ -77,20 +77,21 @@ class Generator(Net):
             with tf.variable_scope("up_sample_%02i"%(i-1)):
 
                 l_l = htf.unpool(l_l, 2**(i-2))
-                print(i)
-                print(l_l.shape)
-                print(channels[-i])
-                l_l = self.conv(l_l, channels[-i], kernel=4)
+                l_l = self.conv(l_l, channels[-i], kernel=4, stddev=0.02, use_bias=False)
 
                 l_l = self.batch_norm(l_l)
 
-                l_l = htf.lrelu(l_l)
+                if(i<=4):
+                    l_l = tf.nn.dropout(rate=0.5)
+
+                l_l = tf.nn.relu(l_l)
 
                 l_l = tf.concat([l_l, skips[-i]], 3)
 
-        l_l = htf.unpool(l_l, 128)
-        l_l = self.conv(l_l, OUTPUT_CHANNELS, kernel=4)
-        l_l = tf.nn.sigmoid(l_l)
+        with tf.variable_scope("up_sample_9"):
+            l_l = htf.unpool(l_l, 128)
+            l_l = self.conv(l_l, OUTPUT_CHANNELS, kernel=4, stddev=0.02)
+            l_l = tf.nn.sigmoid(l_l)
 
         return l_l
 

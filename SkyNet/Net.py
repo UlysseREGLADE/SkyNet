@@ -56,7 +56,7 @@ class Net(object):
                                                       is_training=is_training)
             return normalized
 
-    def conv(self, x, out_channels, kernel=3, strides=1, init=None, name="conv", padding="SAME"):
+    def conv(self, x, out_channels, kernel=3, strides=1, stddev=None, init=None, name="conv", padding="SAME", use_bias=True):
         name = self.get_name(name)
         with tf.variable_scope(name):
             #On calcule la variance relative a l'initialisation des poids
@@ -70,9 +70,9 @@ class Net(object):
 
             if(init is None):
                 init = self.default_init
-            if(init=="normal"):
+            if(init=="normal" and stddev is None):
                 stddev = (2/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
-            elif(init=="uniform"):
+            elif(init=="uniform" and stddev is None):
                 stddev = (6/(shape[1]*shape[2]*(in_channels+out_channels)))**0.5
             stddev *= self.std_coef
             #Puis on initialise les variables
@@ -80,10 +80,14 @@ class Net(object):
                          param=stddev,
                          init=init,
                          name="weigth")
-            b = self.var([out_channels], 0, name="bias")
             #Enfin, on retourne ce qu'il faut
             conv = tf.nn.conv2d(x, w, strides=[1, strides, strides, 1], padding=padding)
-            return (conv + b)
+
+            if(use_bias):
+                b = self.var([out_channels], 0, name="bias")
+                return (conv + b)
+            else:
+                return conv
 
     def fcon(self, x, out_size, init=None, name="fcon"):
         name = self.get_name(name)
