@@ -1,4 +1,5 @@
 import os
+import cv2
 import sys
 import numpy as np
 import tensorflow as tf
@@ -18,6 +19,8 @@ INPUT_CHANNELS = 3
 OUTPUT_CHANNELS = 1
 IMAGE_SIZE = 256
 LAMBDA = 100
+
+INLINE_DISPLAY = True
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -151,33 +154,82 @@ class Pix2pixModel(Model):
                                                                     self.gen_input:gen_input,
                                                                     self.disc_true_input:disc_true_input})
 
+        if(count%100==0 and INLINE_DISPLAY):
 
+            gen_input, disc_true_input = batch.get_test_by_id([314])
+            gen_output, disc_false_output = sess.run((self.gen_output,
+                                                      self.disc_false_output), feed_dict={self.is_training:True,
+                                                                                          self.gen_input:gen_input,
+                                                                                          self.disc_true_input:disc_true_input})
 
-        gen_input, disc_true_input = batch.get_test_by_id([314])
-        gen_output = sess.run((self.gen_output), feed_dict={self.is_training:True,
-                                                            self.gen_input:gen_input,
-                                                            self.disc_true_input:disc_true_input})
-
-        if(count%100==0):
             clear_output(wait=True)
             plt.figure(figsize=(15,15))
 
-            display_list = [gen_input[0,:,:]+0.5, disc_true_input[0,:,:,0]+0.5, gen_output[0,:,:,0]]
-            title = ['Input Image', 'Ground Truth', 'Predicted Image']
+            display_list = [gen_input[0,:,:]+0.5,
+                            disc_true_input[0,:,:,0]+0.5,
+                            gen_output[0,:,:,0],
+                            disc_false_output[0,:,:,0]]
 
-            for i in range(3):
-                plt.subplot(1, 3, i+1)
+            title = ['Input Image', 'Ground Truth', 'Predicted Image', 'Disc False Output']
+
+            for i in range(len(title)):
+                plt.subplot(1, len(title), i+1)
                 plt.title(title[i])
                 # getting the pixel values between [0, 1] to plot it.
                 plt.imshow(display_list[i])
                 plt.axis('off')
             plt.show()
 
-        return {"disc_loss" : disc_loss,
-                "gen_loss" : gen_loss}
+        if(count%500 == 0):
+
+            test_indexs = np.arange(0, self.test_size, self.test_size//50)
+
+            gen_input, disc_true_input = batch.get_test_by_id(test_indexs)
+            gen_output, disc_false_output = sess.run((self.gen_output,
+                                                      self.disc_false_output), feed_dict={self.is_training:True,
+                                                                                          self.gen_input:gen_input,
+                                                                                          self.disc_true_input:disc_true_input})
+
+
+            bool_gen_output = gen_output > 0.5
+            bool_disc_true_input = bool_disc_true_input > 0.5
+
+            test_acc = 1 - np.mean(np.logical_xor(bool_gen_output,
+                                                  bool_disc_true_input))
+
+            img_dir = "gan_sky_pix2pix_images"
+
+            if(not os.path.exists(img_dir)):
+
+                os.mkdir(img_dir)
+
+            title = ['input_image', 'ground_truth', 'predicted_image', 'disc_false_output']
+
+            save_list = [gen_input[:,:,:]+0.5,
+                         disc_true_input[:,:,:,0]+0.5,
+                         gen_output[:,:,:,0],
+                         disc_false_output[:,:,:,0]]
+
+            for j in range(len(test_indexs)):
+
+                for i in range(len(title)):
+
+                    to_save = (save_list[i][j:,:,:]*255).astype(np.uint8)
+                    name = img_dir + "/" + title[i] + ".png"
+
+                    cv2.imwrite(name, to_save)
+
+            return {"tr_dloss" : disc_loss,
+                    "tr_gloss" : gen_loss,
+                    "te_gacc" : test_acc}
+
+        else:
+
+            return {"tr_dloss" : disc_loss,
+                    "tr_gloss" : gen_loss}
 
 
 if(__name__ == "__main__"):
 
     model = Pix2pixModel(name="gan_sky_pix2pix_model")
-    model.train(batch=SkyPix2pixBatch(), epochs=150, display=100, save=100)
+    model.train(batch=SkyPix2pixBatch(), epochs=150, display=10, save=500)
