@@ -112,7 +112,7 @@ class Pix2pixModel(Model):
                                         name="gen_input")
 
         self.gen_output = gen.output(self.gen_input)
-        self.disc_false_input = self.gen_output
+        self.disc_false_input = self.gen_output - 0.5
 
         self.disc_false_output = disc.output([self.disc_false_input, self.gen_input])
 
@@ -125,7 +125,7 @@ class Pix2pixModel(Model):
         ones = tf.ones_like(self.disc_true_output)
         zeros = tf.zeros_like(self.disc_true_output)
 
-        self.gen_loss = LAMBDA*htf.l1loss(self.gen_output, self.disc_true_input) + htf.ce2Dloss(self.disc_false_output, ones)
+        self.gen_loss = LAMBDA*htf.l1loss(self.gen_output, self.disc_true_input + 0.5) + htf.ce2Dloss(self.disc_false_output, ones)
         self.disc_loss = htf.ce2Dloss(self.disc_false_output, zeros) + htf.ce2Dloss(self.disc_true_output, ones)
 
         self.gen_trainer = gen.trainer(self.gen_loss,
@@ -196,7 +196,7 @@ class Pix2pixModel(Model):
             test_acc = 1 - np.mean(np.logical_xor(bool_gen_output,
                                                   bool_disc_true_input))
 
-            img_dir = "gan_sky_pix2pix_images"
+            img_dir = self.name + "_images"
 
             if(not os.path.exists(img_dir)):
 
