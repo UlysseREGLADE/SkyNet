@@ -3,12 +3,7 @@ import csv
 import time
 import shutil
 import datetime
-import numpy as np
 import tensorflow as tf
-
-import SkyNet.Net as cn
-import SkyNet.HandyTensorFunctions as htf
-from SkyNet.Batch.Cifar10Batch import Cifar10Batch
 
 """
 For my ally is the Force, and a powerful ally it is. Life creates it, makes it

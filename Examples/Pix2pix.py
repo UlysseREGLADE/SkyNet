@@ -9,7 +9,6 @@ sys.path.append('../')
 from SkyNet.Net import Net
 from SkyNet.Model import Model
 import SkyNet.HandyTensorFunctions as htf
-import SkyNet.HandyNumpyFunctions as hnf
 from SkyNet.Batch.SkyPix2pixBatch import SkyPix2pixBatch
 
 import matplotlib.pyplot as plt
@@ -180,9 +179,9 @@ class Pix2pixModel(Model):
                 plt.axis('off')
             plt.show()
 
-        if(count%500 == 0):
+        if(count%100 == 0):
 
-            test_indexs = np.arange(0, self.test_size, self.test_size//50)
+            test_indexs = np.arange(0, batch.test_size, batch.test_size//50)
 
             gen_input, disc_true_input = batch.get_test_by_id(test_indexs)
             gen_output, disc_false_output = sess.run((self.gen_output,
@@ -192,7 +191,7 @@ class Pix2pixModel(Model):
 
 
             bool_gen_output = gen_output > 0.5
-            bool_disc_true_input = bool_disc_true_input > 0.5
+            bool_disc_true_input = disc_true_input > 0.5
 
             test_acc = 1 - np.mean(np.logical_xor(bool_gen_output,
                                                   bool_disc_true_input))
@@ -203,21 +202,33 @@ class Pix2pixModel(Model):
 
                 os.mkdir(img_dir)
 
-            title = ['input_image', 'ground_truth', 'predicted_image', 'disc_false_output']
-
-            save_list = [gen_input[:,:,:]+0.5,
-                         disc_true_input[:,:,:,0]+0.5,
-                         gen_output[:,:,:,0],
-                         disc_false_output[:,:,:,0]]
+            save_list = [gen_input+0.5,
+                         disc_true_input+0.5,
+                         gen_output,
+                         disc_false_output]
+            
+            to_save = np.zeros((256, 4*256, 3), dtype=np.uint8)
 
             for j in range(len(test_indexs)):
 
-                for i in range(len(title)):
+                for i in range(len(save_list)):
 
-                    to_save = (save_list[i][j:,:,:]*255).astype(np.uint8)
-                    name = img_dir + "/" + title[i] + ".png"
-
-                    cv2.imwrite(name, to_save)
+                    l_to_save = (save_list[i][j,:,:]*255).astype(np.uint8)
+                    if(i==0):
+                        to_save[:, i*256:(i+1)*256, :] = l_to_save[:,:,::-1]
+                    elif(i!=3):
+                        to_save[:, i*256:(i+1)*256, 0] = l_to_save[:,:,0]
+                        to_save[:, i*256:(i+1)*256, 1] = l_to_save[:,:,0]
+                        to_save[:, i*256:(i+1)*256, 2] = l_to_save[:,:,0]
+                    else:
+                        l_to_save = cv2.resize(l_to_save, (IMAGE_SIZE, IMAGE_SIZE), interpolation=cv2.INTER_NEAREST)
+                        to_save[:, i*256:(i+1)*256, 0] = l_to_save[:,:]
+                        to_save[:, i*256:(i+1)*256, 1] = l_to_save[:,:]
+                        to_save[:, i*256:(i+1)*256, 2] = l_to_save[:,:]
+                        
+                    
+                name = img_dir + "/" + "%05i_%05i"%(test_indexs[j], count) + ".png"
+                cv2.imwrite(name, to_save)
 
             return {"tr_dloss" : disc_loss,
                     "tr_gloss" : gen_loss,
@@ -226,10 +237,11 @@ class Pix2pixModel(Model):
         else:
 
             return {"tr_dloss" : disc_loss,
-                    "tr_gloss" : gen_loss}
+                    "tr_gloss" : gen_loss,
+                    "te_gacc" : 0}
 
 
 if(__name__ == "__main__"):
 
     model = Pix2pixModel(name="gan_sky_pix2pix_model")
-    model.train(batch=SkyPix2pixBatch(), epochs=150, display=10, save=500)
+    model.train(batch=SkyPix2pixBatch(), epochs=10, display=1, save=100)
