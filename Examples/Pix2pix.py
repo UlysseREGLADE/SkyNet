@@ -191,7 +191,7 @@ class Pix2pixModel(Model):
 
 
             bool_gen_output = gen_output > 0.5
-            bool_disc_true_input = disc_true_input > 0.5
+            bool_disc_true_input = disc_true_input > 0.0
 
             test_acc = 1 - np.mean(np.logical_xor(bool_gen_output,
                                                   bool_disc_true_input))
