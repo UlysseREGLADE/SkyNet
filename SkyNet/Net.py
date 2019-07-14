@@ -47,14 +47,11 @@ class Net(object):
 
     def batch_norm(self, x, name="batch_norm"):
         name = self.get_name(name)
-        self.is_batch_norm = True
-        with tf.variable_scope(name):
-            is_training = self.is_training
-            normalized = tf.contrib.layers.batch_norm(x,
-                                                      center=True,
-                                                      scale=True,
-                                                      is_training=is_training)
-            return normalized
+        is_training = self.is_training
+        normalized = tf.layers.batch_normalization(x,
+                                                   training=is_training,
+                                                   name=name)
+        return normalized
 
     def conv(self, x, out_channels, kernel=3, init=None, name="conv", padding="SAME"):
         name = self.get_name(name)

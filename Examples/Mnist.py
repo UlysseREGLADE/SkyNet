@@ -18,14 +18,17 @@ class Classifier(Net):
         #Construction du classifieur
         with tf.variable_scope("fcon1_layer"):
             l_l = self.fcon(l_l, 256)
+            l_l = self.batch_norm(l_l)
             l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("fcon2_layer"):
             l_l = self.fcon(l_l, 256)
+            l_l = self.batch_norm(l_l)
             l_l = tf.nn.relu(l_l)
 
         with tf.variable_scope("fcon3_layer"):
             l_l = self.fcon(l_l, 10)
+            l_l = self.batch_norm(l_l)
             return tf.nn.softmax(l_l)
 
 
@@ -57,11 +60,13 @@ class MnistModel(Model):
         batch_x, batch_y_ref = batch.train(100)
         _, batch_y = sess.run((self.trainer, self.output),
                                feed_dict={self.input:batch_x,
-                                          self.ref_output:batch_y_ref})
+                                          self.ref_output:batch_y_ref,
+                                          self.is_training:True})
 
         test_x, test_y_ref = batch.test(1000)
         test_y = self.output.eval(session=sess,
-                                  feed_dict={self.input:test_x})
+                                  feed_dict={self.input:test_x,
+                                             self.is_training:False})
 
         return {"acc_test" : hnf.compute_acc(test_y, test_y_ref),
                 "acc_train" : hnf.compute_acc(batch_y, batch_y_ref)}
