@@ -3,7 +3,7 @@ import numpy as np
 
 #Utile constant
 
-eps=1e-10
+eps=2e-7
 
 #Activation functions
 
@@ -32,7 +32,7 @@ def l2loss(y, y_ref, name="l2loss"):
 
 def ce2Dloss(y, y_ref, name="ce2Dloss"):
     with tf.variable_scope(name):
-        y = tf.clip_by_value(y, eps, 1-(eps))
+        y = tf.clip_by_value(y, 0+eps, 1-eps)
         return tf.reduce_mean(-y_ref*tf.log(y) - (1-y_ref)*tf.log(1-y))
 
 #Pooling functions
@@ -43,6 +43,20 @@ def mask(rep, tile, one):
     l_mask = np.tile(l_mask, (1, rep, rep, 1))
     l_mask = tf.constant(l_mask, name=str(tile)+"x"+str(tile)+"_"+str(one[0])+"-"+str(one[1]))
     return l_mask
+
+def unpool2x2(x):
+    
+    out = tf.concat([x, tf.zeros_like(x)], 3)
+    out = tf.concat([out, tf.zeros_like(out)], 2)
+
+    sh = x.get_shape().as_list()
+    if None not in sh[1:]:
+        out_size = [-1, sh[1] * 2, sh[2] * 2, sh[3]]
+        return tf.reshape(out, out_size)
+    else:
+        shv = tf.shape(x)
+        ret = tf.reshape(out, tf.stack([-1, shv[1] * 2, shv[2] * 2, sh[3]]))
+    return ret
 
 def unpool(x, size, mask_size=None, i_mask=None, strides=2, name="unpool"):
     with tf.variable_scope(name):
