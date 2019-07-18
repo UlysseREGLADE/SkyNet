@@ -78,7 +78,7 @@ class Generator(Net):
 
             with tf.variable_scope("up_sample_%02i"%(i-1)):
 
-                l_l = htf.unpool(l_l, 2**(i-2))
+                l_l = htf.unpool2x2(l_l)
                 l_l = self.conv(l_l, channels[-i], kernel=4, stddev=0.02, use_bias=False)
 
                 l_l = self.batch_norm(l_l)
@@ -206,7 +206,7 @@ class Pix2pixModel(Model):
                          disc_true_input+0.5,
                          gen_output,
                          disc_false_output]
-            
+
             to_save = np.zeros((256, 4*256, 3), dtype=np.uint8)
 
             for j in range(len(test_indexs)):
@@ -225,8 +225,8 @@ class Pix2pixModel(Model):
                         to_save[:, i*256:(i+1)*256, 0] = l_to_save[:,:]
                         to_save[:, i*256:(i+1)*256, 1] = l_to_save[:,:]
                         to_save[:, i*256:(i+1)*256, 2] = l_to_save[:,:]
-                        
-                    
+
+
                 name = img_dir + "/" + "%05i_%05i"%(test_indexs[j], count) + ".png"
                 cv2.imwrite(name, to_save)
 
