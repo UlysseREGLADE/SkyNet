@@ -11,9 +11,8 @@ def random_crop(x, scale_factor=1.00, mirror=False):
 
     if(mirror):
 
-        to_mirror = np.arange(b_size)
-        np.random.shuffle(to_mirror)
-        x[to_mirror[:b_size//2],:,:,:] = x[to_mirror[:b_size//2],:,::-1,:]
+        to_mirror = np.where(np.random.rand(b_size)>0.5)
+        x[to_mirror,:,:,:] = x[to_mirror,:,::-1,:]
 
     scale_factor = 1 + np.random.rand()*scale_factor
     resized_height = int(scale_factor*height)
@@ -28,8 +27,8 @@ def random_crop(x, scale_factor=1.00, mirror=False):
 
         resized_x = cv2.resize(x[i],(resized_width, resized_height))
 
-        ret[i] = resized_x[crop_h[i]:height+crop_y[i],
-                           crop_w[i]:width+crop_x[i], :]
+        ret[i] = resized_x[crop_h[i]:height+crop_h[i],
+                           crop_w[i]:width+crop_w[i], :]
 
     return ret
 

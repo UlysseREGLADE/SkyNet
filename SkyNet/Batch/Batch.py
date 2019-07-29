@@ -23,18 +23,18 @@ class Batch(object):
     def epoch_count(self):
         return self.count / self.train_size
 
-    def train(self, size):
-        ret = self.train_op(size)
+    def train(self, size, **kwargs):
+        ret = self.train_op(size, **kwargs)
         size = min(self.train_size, size)
         self.count += size
         return ret
 
-    def train_op(self, size):
+    def train_op(self, size, **kwargs):
         raise NotImplementedError("train_op must be implemented")
 
-    def test(self, size):
+    def test(self, size, **kwargs):
         size = min(self.train_size, size)
-        return self.test_op(size)
+        return self.test_op(size, **kwargs)
 
     def test_op(self, size):
         raise NotImplementedError("test_op must be implemented")
