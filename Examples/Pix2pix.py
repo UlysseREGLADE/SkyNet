@@ -9,7 +9,10 @@ sys.path.append('../')
 from SkyNet.Net import Net
 from SkyNet.Model import Model
 import SkyNet.HandyTensorFunctions as htf
-from SkyNet.Batch.SkyPix2pixBatch import SkyPix2pixBatch
+
+sys.path.append('../../python-skydetect/Data/ProcessedData')
+
+from SkyBatch import SkyBatch
 
 import matplotlib.pyplot as plt
 from IPython.display import clear_output
@@ -111,21 +114,21 @@ class Pix2pixModel(Model):
                                         shape=[None, IMAGE_SIZE, IMAGE_SIZE, INPUT_CHANNELS],
                                         name="gen_input")
 
-        self.gen_output = gen.output(self.gen_input)
+        self.gen_output = gen.output(self.gen_input - 0.5)
         self.disc_false_input = self.gen_output - 0.5
 
-        self.disc_false_output = disc.output([self.disc_false_input, self.gen_input])
+        self.disc_false_output = disc.output([self.disc_false_input, self.gen_input - 0.5])
 
         self.disc_true_input = tf.placeholder(tf.float32,
                                               shape=[None, IMAGE_SIZE, IMAGE_SIZE, OUTPUT_CHANNELS],
                                               name="disc_true_input")
 
-        self.disc_true_output = disc.output([self.disc_true_input, self.gen_input])
+        self.disc_true_output = disc.output([self.disc_true_input - 0.5, self.gen_input - 0.5])
 
         ones = tf.ones_like(self.disc_true_output)
         zeros = tf.zeros_like(self.disc_true_output)
 
-        self.gen_loss = LAMBDA*htf.l1loss(self.gen_output, self.disc_true_input + 0.5) + htf.ce2Dloss(self.disc_false_output, ones)
+        self.gen_loss = LAMBDA*htf.l1loss(self.gen_output, self.disc_true_input) + htf.ce2Dloss(self.disc_false_output, ones)
         self.disc_loss = htf.ce2Dloss(self.disc_false_output, zeros) + htf.ce2Dloss(self.disc_true_output, ones)
 
         self.gen_trainer = gen.trainer(self.gen_loss,
@@ -155,7 +158,7 @@ class Pix2pixModel(Model):
 
         if(count%100==0 and INLINE_DISPLAY):
 
-            gen_input, disc_true_input = batch.get_test_by_id([314])
+            gen_input, disc_true_input = batch.real_forground_test_input[4:5].astype(np.float32)/255, batch.real_forground_test_output[4:5].astype(np.float32)/255
             gen_output, disc_false_output = sess.run((self.gen_output,
                                                       self.disc_false_output), feed_dict={self.is_training:True,
                                                                                           self.gen_input:gen_input,
@@ -164,8 +167,8 @@ class Pix2pixModel(Model):
             clear_output(wait=True)
             plt.figure(figsize=(15,15))
 
-            display_list = [gen_input[0,:,:]+0.5,
-                            disc_true_input[0,:,:,0]+0.5,
+            display_list = [gen_input[0,:,:],
+                            disc_true_input[0,:,:,0],
                             gen_output[0,:,:,0],
                             disc_false_output[0,:,:,0]]
 
@@ -181,9 +184,9 @@ class Pix2pixModel(Model):
 
         if(count%100 == 0):
 
-            test_indexs = np.arange(0, batch.test_size, batch.test_size//50)
+            #test_indexs = np.arange(0, batch.test_size, batch.test_size//50)
 
-            gen_input, disc_true_input = batch.get_test_by_id(test_indexs)
+            gen_input, disc_true_input = batch.real_forground_test_input.astype(np.float32)/255, batch.real_forground_test_output.astype(np.float32)/255
             gen_output, disc_false_output = sess.run((self.gen_output,
                                                       self.disc_false_output), feed_dict={self.is_training:True,
                                                                                           self.gen_input:gen_input,
@@ -202,14 +205,14 @@ class Pix2pixModel(Model):
 
                 os.mkdir(img_dir)
 
-            save_list = [gen_input+0.5,
-                         disc_true_input+0.5,
+            save_list = [gen_input,
+                         disc_true_input,
                          gen_output,
                          disc_false_output]
 
             to_save = np.zeros((256, 4*256, 3), dtype=np.uint8)
 
-            for j in range(len(test_indexs)):
+            for j in range(gen_input.shape[0]):
 
                 for i in range(len(save_list)):
 
@@ -227,7 +230,7 @@ class Pix2pixModel(Model):
                         to_save[:, i*256:(i+1)*256, 2] = l_to_save[:,:]
 
 
-                name = img_dir + "/" + "%05i_%05i"%(test_indexs[j], count) + ".png"
+                name = img_dir + "/" + "%05i_%05i"%(j, count) + ".png"
                 cv2.imwrite(name, to_save)
 
             return {"tr_dloss" : disc_loss,
@@ -243,5 +246,5 @@ class Pix2pixModel(Model):
 
 if(__name__ == "__main__"):
 
-    model = Pix2pixModel(name="gan_sky_pix2pix_model")
-    model.train(batch=SkyPix2pixBatch(), epochs=10, display=1, save=100)
+    model = Pix2pixModel(name="gan_sky_pix2pix_synthetic_model")
+    model.train(batch=SkyBatch(), epochs=10, display=1, save=100)

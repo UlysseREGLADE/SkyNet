@@ -14,7 +14,7 @@ def random_crop(x, scale_factor=1.00, mirror=False):
         to_mirror = np.where(np.random.rand(b_size)>0.5)
         x[to_mirror,:,:,:] = x[to_mirror,:,::-1,:]
 
-    scale_factor = 1 + np.random.rand()*scale_factor
+    scale_factor = 1.1 + np.random.rand()*scale_factor
     resized_height = int(scale_factor*height)
     resized_width = int(scale_factor*width)
 
